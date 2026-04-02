@@ -4,3 +4,4 @@ data
 gui-compile.py
 gui-edit.py
 settings.zg.npy
+/venv
