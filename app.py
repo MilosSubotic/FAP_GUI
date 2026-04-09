@@ -312,7 +312,7 @@ class MyUi(Ui_MainWindow):
 
         # Update trigger sources based on channel count
         trigger_sources = ["Generator"]
-        n_channels = len(self.scp.scp.channels)
+        n_channels = self.scp.channels
         for i in range(n_channels):
             trigger_sources.append(f"CH{i + 1}")
         self.comboBox_trigger.clear()
