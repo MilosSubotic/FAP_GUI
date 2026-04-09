@@ -395,7 +395,7 @@ class MyUi(Ui_MainWindow):
         while self.theWorkerBlocks_enabled:
             if self.radioButton_modeBlock.isChecked():
                 # block mode
-                if scp.is_running and scp.measure_mode == libtiepie.MM_STREAM:
+                if scp.is_running and scp.measure_mode == "STREAM":
                     # change from STREAM to BLOCK
 
                     self.scpSet() # set
@@ -427,7 +427,7 @@ class MyUi(Ui_MainWindow):
             else:
                 # stream mode
                 # print("Stream mode")
-                if scp.measure_mode == libtiepie.MM_BLOCK:
+                if scp.measure_mode == "BLOCK":
                     # change from BLOCK to STREAM
                     self.scpSet()
                     scp.start()
@@ -473,7 +473,7 @@ class MyUi(Ui_MainWindow):
         self.arbPlot.setLabel('left', "S (V)")
 
         scp = self.scp.scp
-        if scp is None or (scp.is_running and scp.measure_mode == libtiepie.MM_STREAM):
+        if scp is None or (scp.is_running and scp.measure_mode == "STREAM"):
             # not controlable
             self.statusbar.showMessage("Oscilloscope and Arb. signal Generator are not controllable in STREAM mode!",
                                        2000)
@@ -675,10 +675,11 @@ class MyUi(Ui_MainWindow):
         else:
             self.doubleSpinBox_stabProbePowerOut.setReadOnly(False)
         try:
-            while self.esp32.box.in_waiting > 0:
-                line=self.esp32.readLine()
-                if not line.strip() == '':
-                    self.plainTextEdit_ESP32SerialLog.appendHtml(f"<font color=pink>esp32: {line}</font>")
+            if self.esp32.box:  # OVDE PROVERIMO DA LI UOPSTE IMA SERIJSKE KOMUNIKACIJE, AKO NEMA NE MOZE DA PRISTUPA POLJU IN_WAITING
+                while self.esp32.box.in_waiting > 0:
+                    line=self.esp32.readLine()
+                    if not line.strip() == '':
+                        self.plainTextEdit_ESP32SerialLog.appendHtml(f"<font color=pink>esp32: {line}</font>")
         except Exception as e:
             print(f"func:stabilizeProbe: {e}")
             self.plainTextEdit_ESP32SerialLog.appendHtml(f"<font color=red>unable to receive data</font>")
@@ -1148,7 +1149,7 @@ class MyUi(Ui_MainWindow):
     def onClose(self):
         print("Time to close...")
         self.timerPlotSCP.stop()
-        self.gen.stop()
+        #self.gen.stop()
         self.scpWorkerStop(self.theWorkerBlocks)
 
         # stop save
