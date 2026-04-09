@@ -177,7 +177,7 @@ class MyUi(Ui_MainWindow):
         self.radioButton_FITSource_CH2.clicked.connect(self.fitUISet)
         self.pushButton_Set_FIT_init.clicked.connect(self.copyFITtoInit)
         self.pushButton_SelectFolder.clicked.connect(self.selectFolder)
-        self.lineEdit_FolderName.setText(os.getcwd()+"\\data\\")
+        self.lineEdit_FolderName.setText(os.getcwd() + "/data/") # napravili folder data
         self.comboBox_trigger.currentIndexChanged.connect(self.trigger_changed)
 
         # change CH parameters on the data tab
@@ -1095,7 +1095,7 @@ class MyUi(Ui_MainWindow):
 
     def selectFolder(self):
         folderpath = QtWidgets.QFileDialog.getExistingDirectory(None, 'Select Folder')
-        self.lineEdit_FolderName.setText(folderpath+"\\")
+        self.lineEdit_FolderName.setText(folderpath+"/")
 
     """
     import shutil
@@ -1106,9 +1106,10 @@ class MyUi(Ui_MainWindow):
     print("Used: %d GiB" % (used // (2**30)))
     print("Free: %d GiB" % (free // (2**30)))
 """
+    import shutil
     def showDiskSpace(self):
         GB = 2**30
-        total, used, free = shutil.disk_usage(self.lineEdit_FolderName.text())
+        total, used, free = shutil.disk_usage(self.lineEdit_FolderName.text()) # putanja do foldera nije bila dobra
         self.label_DiskSpace.setText(f"Free space: {free/GB:.2f} GB")
 
         # msg.buttonClicked.connect(self.popup_button)
@@ -1479,6 +1480,7 @@ class MyUi(Ui_MainWindow):
 ##############################################################################################
 
 def main():
+    
     app = QtWidgets.QApplication(sys.argv)
     app.setStyleSheet(qdarkgraystyle.load_stylesheet())
 
@@ -1501,5 +1503,5 @@ def main():
     sys.exit(app.exec_())
     # del MainWindow
 
-if __name__.endswith('__main__'):
+if __name__ == '__main__':
     main()
