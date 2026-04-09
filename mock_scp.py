@@ -28,7 +28,7 @@ class MockDevice:
         print("[MOCK] get_data")
         t = np.linspace(0, 1, self.record_length)
         ch1 = np.sin(2 * np.pi * 5 * t)
-        ch2 = np.random.normal(0, 0.1, self.record_length)
+        ch2 = np.sin(2 * np.pi * 5 * t)
         return [ch1, ch2]
 
 
@@ -48,7 +48,7 @@ class mockSCP(Scope):  # ili MockScope ako pratiš abstrakciju
     def set(self,
             mode="block",
             sample_rate=1e6,
-            record_length=1e3,
+            record_length=1e5,
             CH_ranges=None,
             CH_couplings=None,
             trigger_source="Generator"):
