@@ -9,9 +9,10 @@ import sys
 # pip install python-libtiepie
 import libtiepie
 from sympy.strategies.core import switch
+from scope_interface import Scope
 
 
-class oscilloscope:
+class oscilloscope(Scope):
     srs = {  # list of available sample rates @ 16 bit resolution
         "6.25 M": 6250000,
         "3.125 M": 3125000,
