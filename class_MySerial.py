@@ -104,7 +104,12 @@ class MySerial:
         """Prepare string to be sent to the box,
            add \n at the end or box will wait 1s to get it before continuing...
         """
-        # print("sendToBox")
+        if(self.box == False):
+            print("No serial connection!")
+            return
+        
+
+        print("sendToBox")
         stri = (stri+"\n").encode('utf-8')  # "utf-8"
         #print("Send to box: ", stri)
         return self.box.write(stri)  # + b'\r'
