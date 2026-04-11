@@ -51,21 +51,27 @@ else:
     from tiepieSCP import oscilloscope
 # extend Ui_MainWindow class
 class MyUi(Ui_MainWindow):
+
+    # OVO SU SVI GRAFOVI U APLIKACIJI
     plotWindow = pg.GraphicsLayoutWidget()  # pg.GraphicsWindow() Deprecated
     FITplotWindow_Widget = pg.GraphicsLayoutWidget()  # pg.GraphicsWindow() Deprecated
     monitorPlot_Window = pg.GraphicsLayoutWidget()  # pg.GraphicsWindow()
     probeStabPlot_Window = pg.GraphicsLayoutWidget()  # pg.GraphicsWindow()
     vcsellPlot_Window = pg.GraphicsLayoutWidget()  # pg.GraphicsWindow()
+
+
+    # 3 TAJMERA
     timerPlotSCP = QtCore.QTimer()
     timerStart = QtCore.QTimer()
 
     timerScanSaveDelay = QtCore.QTimer()
+
     scanRunning = False
     scanIndex = 0
     scan_values=[]
     scan_results=[]
 
-    rePlotInterval_ms = 100
+    rePlotInterval_ms = 100 # refresh_rate plota
     SCPData = False
     dataFITtab = False
 
@@ -106,11 +112,13 @@ class MyUi(Ui_MainWindow):
         self.theWorkerSave = Worker(self.SaveData)  # Any other args, kwargs are passed to the run function
         print("Multithreading with maximum %d threads" % self.threadpool.maxThreadCount())
 
+
+        # na ovoliko sekundi refreshuje plot
         self.timerPlotSCP.setInterval(self.rePlotInterval_ms)
         self.timerPlotSCP.timeout.connect(self.plotSCP)
 
-        self.timerStart.setInterval(1000)
-        self.timerStart.timeout.connect(self.boot)
+        self.timerStart.setInterval(1000) 
+        #self.timerStart.timeout.connect(self.boot)
 
         #self.okButton_RangeScanStart
         #self.timerScanSaveDelay.setInterval(2000)
@@ -328,7 +336,7 @@ class MyUi(Ui_MainWindow):
         #self.comboBox_SelectVCSELLSpectrum
     def scpWorkerStart(self, worker):
 
-        print("Boot SCP")
+        print("Boot SCP from worker")
         self.scpSet()
         try:
             worker.signals.result.connect(self.res)
@@ -345,13 +353,15 @@ class MyUi(Ui_MainWindow):
         try:
             self.theWorkerBlocks_enabled = False
 
-            self.threadpool.stop(worker)
+            #self.threadpool.stop(worker)
         except Exception as e:
             print("scpWorkerStop exception: ", e)
 
     def SaveData(self, progress_callback):
         pass
 
+
+    
     def saveData(self, data):
         try:
             self.showDiskSpace()
@@ -461,8 +471,9 @@ class MyUi(Ui_MainWindow):
                 self.doubleSpinBox_RecordsToSave.setDisabled(False)
                 self.label_RemainingToSave.setText("Finished")
                 if not self.soundPlayed:
-                    playsound('Sounds/retro-game-notifi.wav')
-                    self.soundPlayed = True
+                    """wav_obj = playsound.WaveObject.from_wave_file('Sounds/retro-game-notifi.wav')
+                    play_obj = wav_obj.play()
+                    self.soundPlayed = True""" # izlazi kad se ovo upali al se cuje zvuk
 
 
     def plotArb(self, t, y):
@@ -799,10 +810,11 @@ class MyUi(Ui_MainWindow):
     def prog(self, n):
         pass
 
-    def boot(self):
+    # DA LI JE BOOT POTREBAN TO NIKO NE ZNA
+    """def boot(self):
         # Execute
         print("Boot SCP")
-        self.threadpool.start(self.theWorkerBlocks)
+        self.threadpool.start(self.theWorkerBlocks)"""
 
     def setCH_1_2(self):
         # print("setCH_1_2")

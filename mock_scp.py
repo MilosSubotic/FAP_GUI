@@ -9,7 +9,7 @@ class MockDevice:
         self.is_running = False
         self.measure_mode = "BLOCK"
         self.sample_rate = 1e6
-        self.record_length = 1000
+        self.record_length = 1e3
 
     def start(self):
         print("[MOCK] start")
@@ -48,7 +48,7 @@ class mockSCP(Scope):  # ili MockScope ako pratiš abstrakciju
     def set(self,
             mode="block",
             sample_rate=1e6,
-            record_length=1e5,
+            record_length=1e3,
             CH_ranges=None,
             CH_couplings=None,
             trigger_source="Generator"):
