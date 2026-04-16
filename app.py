@@ -28,7 +28,7 @@ import time
 from datetime import datetime
 from scipy.optimize import curve_fit
 from arbcalc import arbcalc
-#from tiepieArb import arbGenerator
+from tiepieArb import arbGenerator
 import CrameRaoFunctions as cr
 import shutil  # about disk remaining memory
 
@@ -71,7 +71,7 @@ class MyUi(Ui_MainWindow):
     scan_values=[]
     scan_results=[]
 
-    rePlotInterval_ms = 100 # refresh_rate plota
+    rePlotInterval_ms = 5000 # refresh_rate plota
     SCPData = False
     dataFITtab = False
 
@@ -104,7 +104,7 @@ class MyUi(Ui_MainWindow):
 
         self.dialogs = list()
 
-        #self.gen = arbGenerator()
+        self.gen = arbGenerator()
         self.scp = oscilloscope()
 
         self.threadpool = QThreadPool()
@@ -291,7 +291,7 @@ class MyUi(Ui_MainWindow):
         # Execute
         self.scpWorkerStart(self.theWorkerBlocks)
         self.timerPlotSCP.start()
-        # self.genStartStop()
+        #self.genStartStop()
 
         self.showDiskSpace()
 
@@ -1128,10 +1128,13 @@ class MyUi(Ui_MainWindow):
         # msg.buttonClicked.connect(self.popup_button)
     def genStartStop(self):
         # self.okButton_GeneratorStart.clicked.connect(self.genStartStop)
-        if self.gen.gen.output_enable: # output_on
-            self.gen.stop()
+        if(self.gen.gen is not None):
+            if self.gen.gen.output_enable: # output_on
+                self.gen.stop()
+            else:
+                self.arbSet()
         else:
-            self.arbSet()
+            print("Nema generatora!")
 
     def arbSet(self):
         arbObj = arbcalc(totalTime=float(self.doubleSpinBox_TotalTime_ms.value()) / 1000,

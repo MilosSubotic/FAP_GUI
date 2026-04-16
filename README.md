@@ -4,3 +4,5 @@ The PyQt project for use of TiePie HS5 oscilloscope in experiments with free pre
 
 New version is can save its settings and use new version of LibTiepie library > 0.9.9 labeled with libtiepie-hw. Installation `pip install python-libtiepie`
 
+Also needed from official repositories:
+sudo apt install libtiepie-hw1
