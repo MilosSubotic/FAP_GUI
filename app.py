@@ -44,11 +44,9 @@ import glob
 
 import class_MySerial as myserial
 
-mock = True
-if(mock):
-    from mock_scp import mockSCP as oscilloscope
-else:
-    from tiepieSCP import oscilloscope
+from mockGen import mockGen
+
+from mock_scp import mockSCP # malo lepse koriscenje oopa
 # extend Ui_MainWindow class
 class MyUi(Ui_MainWindow):
 
@@ -104,8 +102,8 @@ class MyUi(Ui_MainWindow):
 
         self.dialogs = list()
 
-        self.gen = arbGenerator()
-        self.scp = oscilloscope()
+        self.gen = mockGen()
+        self.scp = mockSCP()
 
         self.threadpool = QThreadPool()
         self.theWorkerBlocks = Worker(self.getBlocks)  # Any other args, kwargs are passed to the run function

@@ -12,11 +12,11 @@ class MockDevice:
         self.record_length = 1e3
 
     def start(self):
-        print("[MOCK] start")
+        # print("[MOCK] start")
         self.is_running = True
 
     def stop(self):
-        print("[MOCK] stop")
+        # print("[MOCK] stop")
         self.is_running = False
 
     @property
@@ -25,7 +25,7 @@ class MockDevice:
         return True
 
     def get_data(self):
-        print("[MOCK] get_data")
+        # print("[MOCK] get_data")
         t = np.linspace(0, 1, self.record_length)
         ch1 = np.sin(2 * np.pi * 5 * t)
         ch2 = np.sin(2 * np.pi * 5 * t)
@@ -72,7 +72,7 @@ class mockSCP(Scope):  # ili MockScope ako pratiš abstrakciju
             changed = True
 
         self.status_settings_changed = changed
-        print(f"[MOCK] set called, changed={changed}")
+        # print(f"[MOCK] set called, changed={changed}")
         return changed
 
     def getBlock(self):
