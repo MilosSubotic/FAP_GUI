@@ -566,7 +566,8 @@ class MyUi(Ui_MainWindow):
         tSel = (t > start) & (t < stop)
         # print(tSel)
         mvValsCH1 = np.array(self.SCPData[0])[tSel]
-        meanProbe = np.mean(mvValsCH1)
+        #meanProbe = np.mean(mvValsCH1)
+        meanProbe = 1
         self.ProbePower = meanProbe + self.doubleSpinBox_SignalOffset.value()
         self.stabilizeProbe()
         self.stabilizeVCSELL()
@@ -1154,7 +1155,25 @@ class MyUi(Ui_MainWindow):
             self.statusbar.showMessage("The Generator is not accesible.", 2000)
 
         self.plotArb(t, y)
+        #self.plotArbGenerated()
         self.gen.start()
+
+    def plotArbGenerated(self):
+        if not hasattr(self.gen, "generated_signal"):
+            print("No generated signal")
+            return
+
+        y = self.gen.generated_signal
+        samples = len(y)
+
+        # napravi vremensku osu
+        freq = 1000 / float(self.doubleSpinBox_TotalTime_ms.value())
+        t = np.linspace(0, 1/freq, samples, endpoint=False)
+
+        self.arbPlot.clear()
+        self.arbPlot.plot(1000 * t, y)
+        self.arbPlot.setLabel('bottom', "time (ms)")
+        self.arbPlot.setLabel('left', "Generator output (V)")
 
     """
     Stop the app, save settings etc.

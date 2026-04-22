@@ -10,10 +10,14 @@ class FakeGen:
 class mockGen:
     def __init__(self):
         self.gen = FakeGen()
+        self.data = None
         print("Generator povezan")
 
     def arbLoad(self, arb, amplitude=1, frequency=10, offset=0.0):
         if self.gen is False:
+            return False
+        if len(arb) == 0:
+            print("Empty waveform!")
             return False
         try:
             self.data = np.array(arb, dtype=float)
@@ -29,7 +33,7 @@ class mockGen:
         return True
     
     def start(self):
-        if self.data is None:
+        if self.data is None or len(self.data) == 0:
             print("No waveform loaded!")
             return
 
