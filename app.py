@@ -953,12 +953,70 @@ class MyUi(Ui_MainWindow):
         # fit of the data
         # curve_fit
 
-        p0 = [self.doubleSpinBox_FIT_f0.value(),
+        y = self.filteredDataFIT
+
+        # --- sigurnosne provere ---
+        if len(y) < 20:
+            print("Too little data for fit")
+            return
+
+        if np.std(y) < 1e-9:
+            print("Signal too flat")
+            return
+
+        # --- pametan početni guess ---
+        A0 = (np.max(y) - np.min(y)) / 2
+        dc0 = np.mean(y)
+
+        p0 = [
+            self.doubleSpinBox_FIT_f0.value(),  # freq (može i ovako za sad)
+            A0,
+            0,
+            2 * np.pi * self.doubleSpinBox_FIT_Gamma.value(),
+            dc0
+        ]
+
+        # --- ograničenja ---
+        lower_bounds = [0, -10*A0, -10*A0, 0, -10*abs(dc0)]
+        upper_bounds = [1e6, 10*A0, 10*A0, 1e6, 10*abs(dc0)]
+
+        try:
+            popt, pcov = curve_fit(
+                self.FITfunc,
+                tf,
+                y,
+                p0=p0,
+                bounds=(lower_bounds, upper_bounds),
+                maxfev=20000
+            )
+        except Exception as e:
+            print("FIT failed:", e)
+
+            # fallback da NE pukne aplikacija
+            popt = p0
+            pcov = np.zeros((5, 5))
+
+        self.lastFIT = [popt, pcov]
+
+        """p0 = [self.doubleSpinBox_FIT_f0.value(),
               self.doubleSpinBox_FIT_A.value(),
               self.doubleSpinBox_FIT_B.value(),
               2 * np.pi * self.doubleSpinBox_FIT_Gamma.value(),  # from Hz to rad^-1
               self.doubleSpinBox_FIT_DC.value()]
-        popt, pcov = curve_fit(self.FITfunc, tf, self.filteredDataFIT, p0=p0)
+        try:
+            popt, pcov = curve_fit(
+                self.FITfunc,
+                tf,
+                self.filteredDataFIT,
+                p0=p0,
+                maxfev=10000
+            )
+            self.lastFIT = [popt, pcov]
+        except Exception as e:
+            print("FIT failed:", e)
+            return
+            #Ovde umre: FIT failed: Optimal parameters not found: Number of calls to function has reached maxfev = 10000."""
+
         self.lastFIT = [popt, pcov]
         print("popt = ", popt)
         plainText = "f = {:.4f} Hz\n".format(popt[0])  # +str(popt[0]) + "\n"
@@ -983,8 +1041,8 @@ class MyUi(Ui_MainWindow):
         self.ResidualsDataPlotFIT.setLabel('left', "Residuals", units="V")
 
         """ scipy.signal.periodogram(x, fs=1.0, window='boxcar', nfft=None,
-         detrend='constant', return_onesided=True, 
-         scaling='density', axis=- 1)
+        detrend='constant', return_onesided=True, 
+        scaling='density', axis=- 1)
         """
 
         mean = np.mean(self.unFilteredDataFit)
