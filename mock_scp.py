@@ -26,14 +26,10 @@ class MockDevice:
         return True
 
     def get_data(self):
-        # print("[MOCK] get_data")
-        t = np.linspace(0, 1, self.record_length)
-        #ch1 = np.sin(2 * np.pi * 5 * t)
-        #ch2 = np.sin(2 * np.pi * 5 * t)
-        jl.include("sine.jl")
 
-        ch1 = jl.f(self.sample_rate, 5 * t)
-        ch2 = jl.f(self.sample_rate, 5 * t)
+        # Generiši signal iz Julije
+        ch1 = np.array(jl.f(self.sample_rate, 5, self.record_length))
+        ch2 = np.array(jl.f(self.sample_rate, 5, self.record_length))
 
         return [ch1, ch2]
 
@@ -50,6 +46,8 @@ class mockSCP(Scope):  # ili MockScope ako pratiš abstrakciju
             "625 k": 625000
         }
         self.trigger_name = "Generator"
+        # Učitaj Julia fajl SAMO JEDNOM
+        jl.include("sine.jl")
 
     def set(self,
             mode="block",
