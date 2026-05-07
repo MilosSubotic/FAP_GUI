@@ -1,4 +1,5 @@
 from scope_interface import Scope
+from juliacall import Main as jl
 
 import numpy as np
 import time
@@ -27,8 +28,13 @@ class MockDevice:
     def get_data(self):
         # print("[MOCK] get_data")
         t = np.linspace(0, 1, self.record_length)
-        ch1 = np.sin(2 * np.pi * 5 * t)
-        ch2 = np.sin(2 * np.pi * 5 * t)
+        #ch1 = np.sin(2 * np.pi * 5 * t)
+        #ch2 = np.sin(2 * np.pi * 5 * t)
+        jl.include("sine.jl")
+
+        ch1 = jl.f(self.sample_rate, 5 * t)
+        ch2 = jl.f(self.sample_rate, 5 * t)
+
         return [ch1, ch2]
 
 
