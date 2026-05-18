@@ -28,8 +28,8 @@ class MockDevice:
     def get_data(self):
 
         # Generiši signal iz Julije
-        ch1 = np.array(jl.f(self.sample_rate, 5, self.record_length))
-        ch2 = np.array(jl.f(self.sample_rate, 5, self.record_length))
+        ch1 = jl.f(self.sample_rate, 5, self.record_length)
+        ch2 = jl.f(self.sample_rate, 5, self.record_length)
 
         return [ch1, ch2]
 
