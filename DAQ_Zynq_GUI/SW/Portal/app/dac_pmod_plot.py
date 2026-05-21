@@ -10,19 +10,18 @@ import matplotlib.pyplot as plt
 
 jl.include("dac_backend_portal.jl")
 
-samples = np.array(
-    jl.make_sine(
-        4096,
-        4,
-        1000.0,
-        1250.0
-    ),
-    dtype=np.uint32
-)
+def generate_sine():
+    samples = np.array(
+        jl.make_sine(
+            4096,
+            4,
+            1000.0,
+            1250.0
+        ),
+        dtype=np.uint32
+    )
 
-VREF_MV = 2500.0
-BITS = 16
-F_SMPL = 118000
+    return samples
 
 def dac_to_mv(samples):
     return samples / ((1 << BITS) - 1) * VREF_MV
@@ -79,9 +78,17 @@ def plot_waveform(samples, title="DAC waveform"):
     plt.tight_layout()
     plt.show()
 
+
+#------------MAIN----------------
+VREF_MV = 2500.0
+BITS = 16
+F_SMPL = 118000
+
+samples = generate_sine()
+
 plot_waveform(
     samples,
     title="DAC PMOD — Sine"
 )
 
-jl.send_samples(samples)
+jl.send_samples(jl.Vector[jl.UInt32](samples.tolist()))

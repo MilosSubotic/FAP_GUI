@@ -1,3 +1,5 @@
+from DAQ_Zynq_GUI.SW.Portal.app import adc_pmod_plot as adc
+#from DAQ_Zynq_GUI.SW.Portal.app import dac_pmod_plot as dac
 from scope_interface import Scope
 from juliacall import Main as jl
 

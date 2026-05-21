@@ -11,6 +11,7 @@
 # pip install qdarkgraystyle
 import qdarkgraystyle  # https://pypi.org/project/qdarkgraystyle/
 
+
 from PyQt5.QtCore import QThreadPool
 from QtWorker import Worker
 import sys
@@ -43,6 +44,11 @@ from scipy.interpolate import CubicSpline
 import glob
 
 import class_MySerial as myserial
+
+os.environ["PYTHON_JULIACALL_EXE"] = "/home/lazar-zubovic/julia-1.9.4/bin/julia"
+os.environ["PYTHON_JULIACALL_PROJECT"] = "/home/lazar-zubovic/Desktop/FAP_GUI"
+
+from juliacall import Main as jl
 
 from mockGen import mockGen
 
@@ -1207,12 +1213,10 @@ class MyUi(Ui_MainWindow):
                          )
         arb = arbObj.arb()
         t, y = arb
-        if not self.gen.arbLoad(y,
-                                amplitude=np.max(np.abs(y)),
-                                frequency=1000 / float(self.doubleSpinBox_TotalTime_ms.value())):
+        if not self.gen.arbLoad(y):
             self.statusbar.showMessage("The Generator is not accesible.", 2000)
 
-        self.plotArb(t, y)
+        self.gen.plot()
         #self.plotArbGenerated()
         self.gen.start()
 
