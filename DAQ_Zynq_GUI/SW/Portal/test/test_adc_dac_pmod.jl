@@ -1,6 +1,6 @@
 #!/usr/bin/env julia
 
-include("../Portal_inc.jl")
+include("/home/lazar-zubovic/Desktop/FAP_GUI/DAQ_Zynq_GUI/SW/Portal/Portal_inc.jl")
 
 
 portal = Portal_Wormhole(BACKEND_USB, PG_ADC_DAC_PMOD)

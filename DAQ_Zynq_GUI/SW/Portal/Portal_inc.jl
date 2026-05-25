@@ -17,11 +17,10 @@ for pkg in ["Plots", "GR", "GLMakie"]
     end
 end
 
-include("../../Common/SW/Utils.jl")
+include("/home/lazar-zubovic/Desktop/FAP_GUI/DAQ_Zynq_GUI/Common/SW/Utils.jl")
 using .Utils
-include("../../Common/SW/Units.jl")
+include("/home/lazar-zubovic/Desktop/FAP_GUI/DAQ_Zynq_GUI/Common/SW/Units.jl")
 using .Units
-push!(LOAD_PATH, "../../Common/SW/")
 #using .Utils
 
 

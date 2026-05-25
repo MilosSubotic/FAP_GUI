@@ -4,7 +4,7 @@
 
 #unique!(push!(LOAD_PATH, joinpath(@__DIR__, "..")))
 #using Portal
-include("../Portal_inc.jl")
+include("/home/lazar-zubovic/Desktop/FAP_GUI/DAQ_Zynq_GUI/SW/Portal/Portal_inc.jl")
 
 
 #prog = "../../FW/test__cpu/build/021__add_vec.sv.hex"

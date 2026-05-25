@@ -1,6 +1,6 @@
 #!/usr/bin/env julia
 
-include("../Portal_inc.jl")
+include("/home/lazar-zubovic/Desktop/FAP_GUI/DAQ_Zynq_GUI/SW/Portal/Portal_inc.jl")
 
 const VREF_MV = 2500.0  # AD5541 Vref in mV — measure your actual Vref pin
 

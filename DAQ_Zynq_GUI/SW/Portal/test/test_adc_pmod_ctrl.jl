@@ -1,6 +1,6 @@
 #!/usr/bin/env julia
 
-include("../Portal_inc.jl")
+include("/home/lazar-zubovic/Desktop/FAP_GUI/DAQ_Zynq_GUI/SW/Portal/Portal_inc.jl")
 
 function adc_to_mv(sample::Integer; vref = 2.5, bits = 12)
     max_value = (1 << bits) - 1

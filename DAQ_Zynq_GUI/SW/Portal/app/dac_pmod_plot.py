@@ -10,6 +10,10 @@ import matplotlib.pyplot as plt
 
 jl.include("dac_backend_portal.jl")
 
+VREF_MV = 2500.0
+BITS = 16
+F_SMPL = 118000
+
 def generate_sine():
     samples = np.array(
         jl.make_sine(
@@ -80,15 +84,15 @@ def plot_waveform(samples, title="DAC waveform"):
 
 
 #------------MAIN----------------
-VREF_MV = 2500.0
-BITS = 16
-F_SMPL = 118000
 
-samples = generate_sine()
+if __name__ == "__main__":
+    
 
-plot_waveform(
-    samples,
-    title="DAC PMOD — Sine"
-)
+    samples = generate_sine()
 
-jl.send_samples(jl.Vector[jl.UInt32](samples.tolist()))
+    plot_waveform(
+        samples,
+        title="DAC PMOD — Sine"
+    )
+
+    jl.send_samples(jl.Vector[jl.UInt32](samples.tolist()))

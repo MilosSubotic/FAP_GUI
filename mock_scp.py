@@ -30,8 +30,10 @@ class MockDevice:
     def get_data(self):
 
         # Generiši signal iz Julije
-        ch1 = jl.f(self.sample_rate, 5, self.record_length)
-        ch2 = jl.f(self.sample_rate, 5, self.record_length)
+        t = np.linspace(0, 1, 1000)
+
+        ch1 = np.sin(2 * np.pi * 10 * t)   # 10 Hz sinus
+        ch2 = np.cos(2 * np.pi * 10 * t)   # 10 Hz kosinus
 
         return [ch1, ch2]
 

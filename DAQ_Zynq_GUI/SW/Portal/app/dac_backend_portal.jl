@@ -1,4 +1,4 @@
-include("../Portal_inc.jl")
+include("/home/lazar-zubovic/Desktop/FAP_GUI/DAQ_Zynq_GUI/SW/Portal/Portal_inc.jl")
 
 const GATE = PG_DAC_PMOD_0
 
