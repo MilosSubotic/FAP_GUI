@@ -1216,7 +1216,7 @@ class MyUi(Ui_MainWindow):
         if not self.gen.arbLoad(y):
             self.statusbar.showMessage("The Generator is not accesible.", 2000)
 
-        self.gen.plot()
+        #self.gen.plot()
 
         self.plotArbGenerated()       
         self.gen.start()

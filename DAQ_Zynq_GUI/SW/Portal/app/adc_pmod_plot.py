@@ -52,16 +52,16 @@ def capture(ch, n):
     return samples"""
 
 
-plt.ion()
+#plt.ion()
 
-fig, ax = plt.subplots(figsize=(12, 8))
+#fig, ax = plt.subplots(figsize=(12, 8))
 
 def plot_samples(samples, title_str="ADC PMOD capture"):
 
     mv = adc_to_mv(samples)
     t = t_axis(len(samples))
 
-    ax.clear()
+    ax.cla()
 
     ax.plot(
         t,
@@ -77,11 +77,10 @@ def plot_samples(samples, title_str="ADC PMOD capture"):
     ax.set_ylabel("Voltage [mV]")
 
     ax.legend(loc="upper right")
-
     ax.grid(True)
 
-    plt.draw()
-    plt.pause(0.01)
+    fig.canvas.draw_idle()
+    fig.canvas.flush_events()
 
 """def plot_samples(samples, title_str="ADC PMOD capture"):
     mv = adc_to_mv(samples)

@@ -29,11 +29,8 @@ class MockDevice:
 
     def get_data(self):
 
-        # Generiši signal iz Julije
-        t = np.linspace(0, 1, 1000)
-
-        ch1 = np.sin(2 * np.pi * 10 * t)   # 10 Hz sinus
-        ch2 = np.cos(2 * np.pi * 10 * t)   # 10 Hz kosinus
+        ch1 = adc.capture(1, 10000)
+        ch2 = adc.capture(2, 10000)
 
         return [ch1, ch2]
 
@@ -50,9 +47,6 @@ class mockSCP(Scope):  # ili MockScope ako pratiš abstrakciju
             "625 k": 625000
         }
         self.trigger_name = "Generator"
-        # Učitaj Julia fajl SAMO JEDNOM
-        jl.include("sine.jl")
-
     def set(self,
             mode="block",
             sample_rate=1e6,

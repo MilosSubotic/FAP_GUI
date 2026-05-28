@@ -12,6 +12,7 @@ class mockGen:
     def __init__(self):
         self.gen = FakeGen()
         self.data = None
+
         print("Generator povezan")
 
     def arbLoad(self, arb):
@@ -25,6 +26,8 @@ class mockGen:
             self.data = dac.generate_sine()
 
             print(f"Mock: Loaded {len(self.data)} samples")
+
+            self.dac_to_mv()
         except Exception as e:
             print("Mock error:", e)
             return False
@@ -33,6 +36,9 @@ class mockGen:
     
     def plot(self):
         dac.plot_waveform(self.data)
+
+    def dac_to_mv(self):
+        self.generated_signal = dac.dac_to_mv(self.data)
     
     def start(self):
         if self.data is None or len(self.data) == 0:
