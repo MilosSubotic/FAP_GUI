@@ -1,18 +1,24 @@
 from DAQ_Zynq_GUI.SW.Portal.app import adc_pmod_plot as adc
 #from DAQ_Zynq_GUI.SW.Portal.app import dac_pmod_plot as dac
 from scope_interface import Scope
-from juliacall import Main as jl
+
 
 import numpy as np
 import time
+
+ADC_SAMPLE_RATE = 118000   # Hz, pravi ADC PMOD rate
+ADC_BITS        = 12
+ADC_VREF        = 3.3
+ADC_N_SAMPLES   = 256       # po kanalu, matches standalone skriptu
+
 
 
 class MockDevice:
     def __init__(self):
         self.is_running = False
         self.measure_mode = "BLOCK"
-        self.sample_rate = 1e6
-        self.record_length = 1e3
+        self.sample_rate = ADC_SAMPLE_RATE
+        self.record_length = ADC_N_SAMPLES
 
     def start(self):
         # print("[MOCK] start")
@@ -28,11 +34,14 @@ class MockDevice:
         return True
 
     def get_data(self):
-
-        ch1 = adc.capture(1, 10000)
-        ch2 = adc.capture(2, 10000)
-
-        return [ch1, ch2]
+        try:
+            ch1 = adc.adc_to_mv(adc.capture(1, ADC_N_SAMPLES))
+            ch2 = 0
+            return [ch1, ch2]
+        except Exception as e:
+            print(f"[mock_scp] ADC capture failed: {e}, using fallback sin/cos")
+            t = np.linspace(0, 1, ADC_N_SAMPLES)
+            return [np.sin(2 * np.pi * 10 * t), np.cos(2 * np.pi * 10 * t)]
 
 
 class mockSCP(Scope):  # ili MockScope ako pratiš abstrakciju

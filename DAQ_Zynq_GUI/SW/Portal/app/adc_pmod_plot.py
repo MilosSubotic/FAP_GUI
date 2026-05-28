@@ -52,11 +52,12 @@ def capture(ch, n):
     return samples"""
 
 
-#plt.ion()
 
-#fig, ax = plt.subplots(figsize=(12, 8))
 
 def plot_samples(samples, title_str="ADC PMOD capture"):
+    plt.ion()
+
+    fig, ax = plt.subplots(figsize=(12, 8))
 
     mv = adc_to_mv(samples)
     t = t_axis(len(samples))
@@ -95,7 +96,7 @@ def plot_samples(samples, title_str="ADC PMOD capture"):
     plt.grid(True)
     plt.show()"""
 
-if __name__ == "__main__":
+def main():
     ch = 1  #A0 - 1, A1 - 2     #TREBA KAO PARAMETAR
     if LIVE_LOOP:
         iter = 1
@@ -108,3 +109,4 @@ if __name__ == "__main__":
     else:
         samples = capture(GATE, ch, N)
         plot_samples(samples)
+
