@@ -52,6 +52,21 @@ from juliacall import Main as jl
 
 from mockGen import mockGen
 
+from multiprocessing import Process, Queue
+def adc_process(queue, n_samples):
+    from DAQ_Zynq_GUI.SW.Portal.app import adc_pmod_plot as adc
+
+    print("ADC PROCESS STARTED")
+
+    while True:
+        print("before capture")
+        raw = adc.capture(1, n_samples)
+        print("after capture")
+
+        ch1 = adc.adc_to_mv(raw)
+        queue.put([ch1, np.zeros_like(ch1)])
+import threading
+
 from mock_scp import mockSCP # malo lepse koriscenje oopa
 # extend Ui_MainWindow class
 class MyUi(Ui_MainWindow):
@@ -116,7 +131,6 @@ class MyUi(Ui_MainWindow):
         self.theWorkerSave = Worker(self.SaveData)  # Any other args, kwargs are passed to the run function
         print("Multithreading with maximum %d threads" % self.threadpool.maxThreadCount())
 
-
         # na ovoliko sekundi refreshuje plot
         self.timerPlotSCP.setInterval(self.rePlotInterval_ms)
         self.timerPlotSCP.timeout.connect(self.plotSCP)
@@ -133,13 +147,37 @@ class MyUi(Ui_MainWindow):
         self.esp32.connect()
 
 
+        self.adc_queue = Queue()
 
+        self.adc_proc = Process(
+            target=adc_process,
+            args=(self.adc_queue, 256)
+        )
+
+        self.adc_proc.start()
+
+        self.timerADC = QtCore.QTimer()
+        self.timerADC.timeout.connect(self.updateADC)
+        self.timerADC.start(50)
+
+        print("MAIN PID =", os.getpid())
+        print("MAIN THREAD =", threading.get_ident())
+
+    def updateADC(self):
+        while not self.adc_queue.empty():
+            self.SCPData = self.adc_queue.get()
+            print("ADC DATA RECEIVED", len(self.SCPData[0]))
 
     """
     override function of the parent class to connect actions and buttons
     set user interface
     """
     def setupUi(self, MainWindow):
+        print("MAIN THREAD CAPTURE")
+
+        #x = self.capture(1, 256)
+
+        print("MAIN THREAD DONE")
         super(MyUi, self).setupUi(MainWindow)  # call function of the parent class
         self.refreshSpectrumFolderCombo() # should be performed before loading settings
         self.loadSettings()
@@ -293,7 +331,7 @@ class MyUi(Ui_MainWindow):
         self.tabWidget.setCurrentIndex(0)
 
         # Execute
-        self.scpWorkerStart(self.theWorkerBlocks)
+        #self.scpWorkerStart(self.theWorkerBlocks)
         self.timerPlotSCP.start()
         #self.genStartStop()
 
@@ -434,7 +472,11 @@ class MyUi(Ui_MainWindow):
                     time.sleep(0.01)  # 10 ms delay, to save CPU time
 
                 # Get data:
+                print("before get_data")
+
                 self.SCPData = scp.get_data()
+
+                print("after get_data")
                 # print("Got SCP data!")
                 # print(f"scp {scp.sample_rate=}")
                 # print(f" self.SCPData len = {len(self.SCPData[0])}")
@@ -554,6 +596,18 @@ class MyUi(Ui_MainWindow):
         tSel = (t > start) & (t < stop)
         #print(tSel)
         elValsCH1 = np.array(self.SCPData[0])[tSel]
+
+        if len(elValsCH1) < len(fltr):
+            print("Not enough samples in selected region")
+            return
+
+        """print("t range:", t[0], t[-1])
+        print("region:", start, stop)
+        print("selected:", np.sum(tSel)"""
+
+        print("samples =", len(self.SCPData[0]))
+        print("sr =", sr)
+        print("duration ms =", 1000 * len(self.SCPData[0]) / sr)
 
         filtered = signal.convolve(elValsCH1, fltr, mode='valid')
 

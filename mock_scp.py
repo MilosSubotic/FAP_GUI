@@ -2,9 +2,29 @@ from DAQ_Zynq_GUI.SW.Portal.app import adc_pmod_plot as adc
 #from DAQ_Zynq_GUI.SW.Portal.app import dac_pmod_plot as dac
 from scope_interface import Scope
 
-
+import threading
 import numpy as np
 import time
+
+from multiprocessing import Process, Queue
+
+def worker(q, n):
+    import os
+    import threading
+
+    print("PID =", os.getpid())
+    print("THREAD =", threading.get_ident())
+    print("worker process start")
+
+    from DAQ_Zynq_GUI.SW.Portal.app import adc_pmod_plot as adc
+
+    raw = adc.capture(1, n)
+
+    print("capture done")
+
+    q.put(raw)
+
+    print("queue put done")
 
 ADC_SAMPLE_RATE = 118000   # Hz, pravi ADC PMOD rate
 ADC_BITS        = 12
@@ -34,14 +54,31 @@ class MockDevice:
         return True
 
     def get_data(self):
-        try:
-            ch1 = adc.adc_to_mv(adc.capture(1, ADC_N_SAMPLES))
-            ch2 = 0
-            return [ch1, ch2]
-        except Exception as e:
-            print(f"[mock_scp] ADC capture failed: {e}, using fallback sin/cos")
-            t = np.linspace(0, 1, ADC_N_SAMPLES)
-            return [np.sin(2 * np.pi * 10 * t), np.cos(2 * np.pi * 10 * t)]
+
+        q = Queue()
+
+        p = Process(
+            target=worker,
+            args=(q, self.record_length)
+        )
+
+        print("before process")
+
+        p.start()
+
+        print("before q.get")
+
+        raw = q.get()
+
+        print("after q.get")
+
+        p.join()
+
+        ch1 = adc.adc_to_mv(raw)
+        ch2 = np.zeros_like(ch1)
+
+        return [ch1, ch2]
+    
 
 
 class mockSCP(Scope):  # ili MockScope ako pratiš abstrakciju
