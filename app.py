@@ -8,6 +8,10 @@
 # C:\Users\Zoran\Anaconda3\Library\bin
 # C:\Users\Zoran\Anaconda3\Library\bin\pyuic5 gui.ui -o gui.py
 
+import multiprocessing
+multiprocessing.set_start_method("spawn", force=True)
+from queue import Empty
+
 # pip install qdarkgraystyle
 import qdarkgraystyle  # https://pypi.org/project/qdarkgraystyle/
 
@@ -48,23 +52,36 @@ import class_MySerial as myserial
 os.environ["PYTHON_JULIACALL_EXE"] = "/home/lazar-zubovic/julia-1.9.4/bin/julia"
 os.environ["PYTHON_JULIACALL_PROJECT"] = "/home/lazar-zubovic/Desktop/FAP_GUI"
 
-from juliacall import Main as jl
+#from juliacall import Main as jl
 
 from mockGen import mockGen
 
 from multiprocessing import Process, Queue
 def adc_process(queue, n_samples):
-    from DAQ_Zynq_GUI.SW.Portal.app import adc_pmod_plot as adc
 
     print("ADC PROCESS STARTED")
+    print("QUEUE CHILD =", id(queue))
+    print("QUEUE CHILD TYPE =", type(queue))
+    #print("before import adc")
+    from DAQ_Zynq_GUI.SW.Portal.app import adc_pmod_plot as adc
+    #print("after import adc")
+
+    import numpy as np
 
     while True:
         print("before capture")
+
         raw = adc.capture(1, n_samples)
+
         print("after capture")
 
-        ch1 = adc.adc_to_mv(raw)
+        ch1 = np.asarray(adc.adc_to_mv(raw)).copy()
+
+        print("before put")
+
         queue.put([ch1, np.zeros_like(ch1)])
+
+        print("after put")
 import threading
 
 from mock_scp import mockSCP # malo lepse koriscenje oopa
@@ -149,9 +166,11 @@ class MyUi(Ui_MainWindow):
 
         self.adc_queue = Queue()
 
+        print("QUEUE MAIN =", id(self.adc_queue))
+
         self.adc_proc = Process(
             target=adc_process,
-            args=(self.adc_queue, 256)
+            args=(self.adc_queue, 32768)
         )
 
         self.adc_proc.start()
@@ -163,10 +182,20 @@ class MyUi(Ui_MainWindow):
         print("MAIN PID =", os.getpid())
         print("MAIN THREAD =", threading.get_ident())
 
+
     def updateADC(self):
         while not self.adc_queue.empty():
             self.SCPData = self.adc_queue.get()
-            print("ADC DATA RECEIVED", len(self.SCPData[0]))
+
+            samples = len(self.SCPData[0])
+            sr = self.scp.scp.sample_rate
+            duration_ms = samples * 1000 / sr
+
+            print("samples =", samples)
+            print("sr =", sr)
+            print("duration ms =", duration_ms)
+
+            self.plotSCP()
 
     """
     override function of the parent class to connect actions and buttons
@@ -442,6 +471,7 @@ class MyUi(Ui_MainWindow):
 
     def getBlocks(self, progress_callback):
         print("Worker here")
+        print("GETBLOCKS CALLED")
 
         scp = self.scp.scp
         while self.theWorkerBlocks_enabled:
@@ -475,7 +505,7 @@ class MyUi(Ui_MainWindow):
                 print("before get_data")
 
                 self.SCPData = scp.get_data()
-
+                print("GETBLOCKS WRITING SCPDATA")
                 print("after get_data")
                 # print("Got SCP data!")
                 # print(f"scp {scp.sample_rate=}")
@@ -549,6 +579,18 @@ class MyUi(Ui_MainWindow):
         self.plotSCP()
 
     def plotSCP(self):
+        if isinstance(self.SCPData, bool):
+            return
+
+        samples = len(self.SCPData[0])
+        sr = self.scp.scp.sample_rate
+
+        print("samples =", samples)
+        print("sr =", sr)
+        print("duration ms =", samples * 1000 / sr)
+        
+        print("plotSCP called")
+        print("SCPData type =", type(self.SCPData))
 
         if self.tabWidget.currentIndex() == 2:  # Monitor tab
             return self.plotSCPMonitor()
@@ -575,6 +617,12 @@ class MyUi(Ui_MainWindow):
         self.ch1Plot.setLabel('bottom', "time (ms)")
         self.ch1Plot.setLabel('left', "CH1 (V)")
         self.ch1Plot.plot(t, self.SCPData[0])
+        print(
+            "CH1:",
+            np.min(self.SCPData[0]),
+            np.max(self.SCPData[0]),
+            np.mean(self.SCPData[0])
+        )
         redPen = pg.mkPen('r', width=2, style=QtCore.Qt.DashLine)
         grid = pg.GridItem(pen=redPen)
         grid.setTickSpacing(x=[1e5], y=[float(self.comboBox_CH1Range.currentText())])
