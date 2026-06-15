@@ -2,6 +2,7 @@
 from DAQ_Zynq_GUI.SW.Portal.app import dac_pmod_plot as dac
 import array as array
 import numpy as np
+from juliacall import Main as jl
 
 class FakeGen:
     def __init__(self):
@@ -16,6 +17,10 @@ class mockGen:
         print("Generator povezan")
 
     def arbLoad(self, arb):
+        print("ARB MIN =", np.min(arb))
+        print("ARB MAX =", np.max(arb))
+        print("ARB LEN =", len(arb))
+
         if self.gen is False:
             return False
         if len(arb) == 0:
@@ -23,7 +28,7 @@ class mockGen:
             return False
         try:
             #self.data = np.array(arb, dtype=float)
-            self.data = dac.generate_sine()
+            self.data = dac.waveform_to_dac(arb)
 
             print(f"Mock: Loaded {len(self.data)} samples")
 
@@ -41,13 +46,17 @@ class mockGen:
         self.generated_signal = dac.dac_to_mv(self.data)
     
     def start(self):
-        if self.data is None or len(self.data) == 0:
-            print("No waveform loaded!")
+
+        if self.data is None:
             return
+
+        jl.send_samples(
+            jl.Vector[jl.UInt32](self.data.tolist())
+        )
 
         self.gen.output_enable = True
 
-        print("Mock: Signal generated")
+        print("Waveform sent")
 
     def stop(self):
         self.gen.output_enable = False

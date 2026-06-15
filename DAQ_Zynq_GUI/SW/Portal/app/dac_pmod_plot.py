@@ -30,6 +30,15 @@ def generate_sine():
 def dac_to_mv(samples):
     return samples / ((1 << BITS) - 1) * VREF_MV
 
+def waveform_to_dac(samples_v):
+    samples_v = np.asarray(samples_v)
+
+    return np.clip(
+        samples_v / 2.5 * ((1 << 16) - 1),
+        0,
+        (1 << 16) - 1
+    ).astype(np.uint32)
+
 def t_axis(n):
     return np.arange(n) / F_SMPL * 1e6  # us
 
