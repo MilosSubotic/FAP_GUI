@@ -36,38 +36,66 @@ end
 
 function send_samples(samples::Vector{UInt32})
 
+    println("D0")
+
     portal = Portal_Wormhole(BACKEND_USB, GATE)
+
+    println("D1")
+
     dac = DAC_PMOD_CTRL(portal)
+
+    println("D2")
 
     try
 
-        while dma_write_done(dac) != 1
-            sleep(0.01)
+        dma = dma_write_done(dac)
+
+        println("DMA = ", dma)
+
+        if dma == 1
+
+            println("Writing buffer")
+
+            write_buf(dac, samples)
+
+            println("CPU done")
+
+            cpu_write_done(dac)
+
+        else
+
+            println("DMA not ready")
+
         end
 
-        write_buf(dac, samples)
-
-        cpu_write_done(dac)
+        println("Triggering")
 
         cnv_trig(dac, length(samples))
 
-        while true
+        println("Samples count = ", length(samples))
 
-            sleep(0.05)
+        for i in 1:20
 
             progress = cnv_progress(dac)
 
-            println("Progress: $progress%")
+            println("Progress: ", progress)
 
-            progress >= 100 && break
+            sleep(0.1)
+
         end
+
+        println("DAC playback complete.")
 
     finally
 
+        println("Closing USB...")
+
         close(dac.portal)
+
     end
 
     return true
+
 end
 
 function make_sine(

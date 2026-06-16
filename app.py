@@ -1297,6 +1297,13 @@ class MyUi(Ui_MainWindow):
             if self.gen.gen.output_enable: # output_on
                 self.gen.stop()
             else:
+                print("STOP ADC")
+
+                self.adc_proc.terminate()
+                self.adc_proc.join()
+
+                print("ADC STOPPED")
+                
                 self.arbSet()
         else:
             print("Nema generatora!")

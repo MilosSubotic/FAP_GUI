@@ -3,6 +3,7 @@ from DAQ_Zynq_GUI.SW.Portal.app import dac_pmod_plot as dac
 import array as array
 import numpy as np
 from juliacall import Main as jl
+import matplotlib.pyplot as plt
 
 class FakeGen:
     def __init__(self):
@@ -20,6 +21,13 @@ class mockGen:
         print("ARB MIN =", np.min(arb))
         print("ARB MAX =", np.max(arb))
         print("ARB LEN =", len(arb))
+        print("ARB FIRST 50 =")
+        print(arb[:50])
+
+        plt.figure()
+        plt.plot(arb)
+        plt.title("arbcalc output")
+        plt.show()
 
         if self.gen is False:
             return False
@@ -50,14 +58,33 @@ class mockGen:
         if self.data is None:
             return
 
-        jl.send_samples(
-            jl.Vector[jl.UInt32](self.data.tolist())
-        )
+        try:
+            print("before send")
+
+            print("samples len =", len(self.data))
+            print("samples min =", np.min(self.data))
+            print("samples max =", np.max(self.data))
+
+            print("creating julia vector")
+
+            vec = jl.Vector[jl.UInt32](self.data.tolist())
+
+            print("vector created")
+
+            jl.send_samples(vec)
+
+            print("send returned")
+
+            print("SEND OK")
+
+        except Exception as e:
+            print("SEND FAILED")
+            print(e)
+            raise
 
         self.gen.output_enable = True
 
-        print("Waveform sent")
-
+    print("Waveform sent")
     def stop(self):
         self.gen.output_enable = False
         print("Mock: stopped")
