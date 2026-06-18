@@ -206,8 +206,9 @@ end
     #test_dac_sine(PG_DAC_PMOD_0, N)
     sleep(1)
 
-    println("Testing DAC PMOD 0 buffer readback with N=$N samples")
-    test_dac_buf_readback(PG_DAC_PMOD_0, N)
+    #println("Testing DAC PMOD 0 buffer readback with N=$N samples")
+    #test_dac_buf_readback(PG_DAC_PMOD_0, N)
+    scope_debug_sine(PG_DAC_PMOD_0)
     sleep(1)
 if false
 

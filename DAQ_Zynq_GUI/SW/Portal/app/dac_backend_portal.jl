@@ -47,15 +47,14 @@ function send_samples(samples::Vector{UInt32})
 
         cnv_trig(dac, length(samples))
 
-        while true
+        for i in 1:20
 
-            sleep(0.05)
+            sleep(0.1)
 
             progress = cnv_progress(dac)
 
-            println("Progress: $progress%")
+            println("Progress: $progress")
 
-            progress >= 100 && break
         end
 
     finally
