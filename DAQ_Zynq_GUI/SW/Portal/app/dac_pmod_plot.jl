@@ -1,6 +1,6 @@
 #!/usr/bin/env julia
 
-include("/home/lazar-zubovic/Desktop/FAP_GUI/DAQ_Zynq_GUI/SW/Portal/Portal_inc.jl")
+include("../Portal_inc.jl")
 
 using Plots
 gr()

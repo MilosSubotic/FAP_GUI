@@ -17,9 +17,9 @@ for pkg in ["Plots", "GR", "GLMakie"]
     end
 end
 
-include("/home/lazar-zubovic/Desktop/FAP_GUI/DAQ_Zynq_GUI/Common/SW/Utils.jl")
+include("../../Common/SW/Utils.jl")
 using .Utils
-include("/home/lazar-zubovic/Desktop/FAP_GUI/DAQ_Zynq_GUI/Common/SW/Units.jl")
+include("../../Common/SW/Units.jl")
 using .Units
 #using .Utils
 

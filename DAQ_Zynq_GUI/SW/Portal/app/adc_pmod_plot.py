@@ -4,9 +4,25 @@ import matplotlib.pyplot as plt
 
 #Za pravilno pozivanje julie
 import os
+import shutil
+from pathlib import Path
 
-os.environ["PYTHON_JULIACALL_EXE"] = "/home/lazar-zubovic/julia-1.9.4/bin/julia"
-os.environ["PYTHON_JULIACALL_PROJECT"] = "/home/lazar-zubovic/Desktop/LPRS2_2026/DAQ_Zynq_GUI/SW/Portal/app"
+def find_project_root(start: Path):
+    for parent in [start] + list(start.parents):
+        if (parent / ".git").exists():
+            return parent
+    raise RuntimeError("Project root not found")
+
+current = Path(__file__).resolve()
+project_root = find_project_root(current)
+
+julia_path = shutil.which("julia")
+if julia_path:
+    os.environ["PYTHON_JULIACALL_EXE"] = julia_path
+else:
+    raise FileNotFoundError("Could not find 'julia' in the system PATH.")
+
+os.environ["PYTHON_JULIACALL_PROJECT"] = str(project_root) + "/DAQ_Zynq_GUI/SW/Portal/app"
 
 from juliacall import Main as jl
 jl.include("adc_backend_portal.jl")

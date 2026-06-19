@@ -48,11 +48,25 @@ from scipy.interpolate import CubicSpline
 import glob
 
 import class_MySerial as myserial
+from juliacall import Main as jl
+from pathlib import Path
 
-os.environ["PYTHON_JULIACALL_EXE"] = "/home/lazar-zubovic/julia-1.9.4/bin/julia"
-os.environ["PYTHON_JULIACALL_PROJECT"] = "/home/lazar-zubovic/Desktop/FAP_GUI"
+def find_project_root(start: Path):
+    for parent in [start] + list(start.parents):
+        if (parent / ".git").exists():
+            return parent
+    raise RuntimeError("Project root not found")
 
-#from juliacall import Main as jl
+current = Path(__file__).resolve()
+project_root = find_project_root(current)
+
+julia_path = shutil.which("julia")
+if julia_path:
+    os.environ["PYTHON_JULIACALL_EXE"] = julia_path
+else:
+    raise FileNotFoundError("Could not find 'julia' in the system PATH.")
+
+os.environ["PYTHON_JULIACALL_PROJECT"] = str(project_root)
 
 from mockGen import mockGen
 
@@ -161,7 +175,7 @@ class MyUi(Ui_MainWindow):
         self.theWorkerBlocks_enabled = True
 
         self.esp32 = myserial.MySerial()
-        self.esp32.connect()
+        #self.esp32.connect()
 
 
         self.adc_queue = Queue()
