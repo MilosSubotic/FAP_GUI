@@ -74,14 +74,13 @@ function send_samples(samples::Vector{UInt32})
 
         println("Samples count = ", length(samples))
 
-        for i in 1:20
-
-            progress = cnv_progress(dac)
-
-            println("Progress: ", progress)
-
+        for i in 1:30
             sleep(0.1)
 
+            p = cnv_progress(dac)
+            d = dma_write_done(dac)
+
+            println("progress=$p dma=$d")
         end
 
         println("DAC playback complete.")

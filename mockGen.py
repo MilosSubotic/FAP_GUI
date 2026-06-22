@@ -24,6 +24,15 @@ class mockGen:
         print("ARB FIRST 50 =")
         print(arb[:50])
 
+        # Sacuvaj originalni ArbCalc signal
+        np.savetxt(
+            "/tmp/arbcalc_signal.txt",
+            arb,
+            fmt="%.10f"
+        )
+
+        print("Saved ArbCalc signal -> /tmp/arbcalc_signal.txt")
+
         plt.figure()
         plt.plot(arb)
         plt.title("arbcalc output")
@@ -34,13 +43,27 @@ class mockGen:
         if len(arb) == 0:
             print("Empty waveform!")
             return False
+
         try:
-            #self.data = np.array(arb, dtype=float)
             self.data = dac.waveform_to_dac(arb)
+
+            print("DAC UNIQUE =", len(np.unique(self.data)))
+            print("DAC MIN =", np.min(self.data))
+            print("DAC MAX =", np.max(self.data))
+
+            # Sacuvaj DAC kodove
+            np.savetxt(
+                "/tmp/dac_samples.txt",
+                self.data,
+                fmt="%u"
+            )
+
+            print("Saved DAC samples -> /tmp/dac_samples.txt")
 
             print(f"Mock: Loaded {len(self.data)} samples")
 
             self.dac_to_mv()
+
         except Exception as e:
             print("Mock error:", e)
             return False

@@ -1335,13 +1335,20 @@ class MyUi(Ui_MainWindow):
                          expRelaxation=float(self.doubleSpinBox_ExpRelaxation.value())
                          )
         arb = arbObj.arb()
+        """arb = np.concatenate([
+            np.ones(2000) * 0.6,
+            np.ones(2000) * (-0.5),
+            np.ones(7000) * 0.0
+        ])"""
         t, y = arb
         if not self.gen.arbLoad(y):
             self.statusbar.showMessage("The Generator is not accesible.", 2000)
 
         #self.gen.plot()
 
-        self.plotArbGenerated()       
+        self.plotArbGenerated()    
+        print("Peak-to-peak =", np.max(arb) - np.min(arb))
+        print("Mean =", np.mean(arb))   
         self.gen.start()
 
     def plotArbGenerated(self):

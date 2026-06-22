@@ -47,7 +47,10 @@ def dac_to_mv(samples):
     return samples / ((1 << BITS) - 1) * VREF_MV
 
 def waveform_to_dac(samples_v):
-    samples_v = np.asarray(samples_v)
+    samples_v = np.asarray(samples_v, dtype=float)
+
+    # Pomeri bipolaran signal oko sredine DAC opsega
+    samples_v = samples_v + 1.25
 
     return np.clip(
         samples_v / 2.5 * ((1 << 16) - 1),
