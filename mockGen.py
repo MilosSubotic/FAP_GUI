@@ -23,8 +23,10 @@ class mockGen:
         print("ARB LEN =", len(arb))
         print("ARB FIRST 50 =")
         print(arb[:50])
+        
 
         # Sacuvaj originalni ArbCalc signal
+        self.original_arb = np.array(arb, dtype=float)
         np.savetxt(
             "/tmp/arbcalc_signal.txt",
             arb,

@@ -628,9 +628,46 @@ class MyUi(Ui_MainWindow):
         self.ch1Plot.clear()
         self.ch2Plot.clear()
 
+        arb = self.gen.generated_signal
+
+        print("ARB PLOT MIN =", np.min(arb))
+        print("ARB PLOT MAX =", np.max(arb))
+        print("ARB LEN =", len(arb))
+
+        print("ADC LEN =", len(self.SCPData[0]))
+        print("ARB LEN =", len(self.gen.generated_signal))
+
+        t_arb = np.linspace(
+            0,
+            1000 * len(arb) / sr,
+            len(arb),
+            endpoint=False
+        )
+
         self.ch1Plot.setLabel('bottom', "time (ms)")
-        self.ch1Plot.setLabel('left', "CH1 (V)")
-        self.ch1Plot.plot(t, self.SCPData[0])
+        self.ch1Plot.setLabel('left', "ARB (mV)")
+        self.ch1Plot.plot(t_arb, arb)
+
+        print(
+            "ADC:",
+            np.min(self.SCPData[0]),
+            np.max(self.SCPData[0])
+        )
+
+        if hasattr(self.gen, "generated_signal"):
+            print(
+                "ARB:",
+                np.min(self.gen.generated_signal),
+                np.max(self.gen.generated_signal)
+            )
+
+        #self.ch1Plot.plot(t, self.SCPData[0])
+        print("PLOTTING ARBCALC DIRECTLY")
+        self.ch1Plot.plot(t[:len(self.gen.generated_signal)],
+                            self.gen.generated_signal)
+        
+        print("RETURNING AFTER ARBCALC PLOT")
+        return
         print(
             "CH1:",
             np.min(self.SCPData[0]),
@@ -1356,8 +1393,10 @@ class MyUi(Ui_MainWindow):
             print("No generated signal")
             return
 
-        y = self.gen.generated_signal
+        y = self.gen.original_arb
         samples = len(y)
+        print("PLOT MIN =", np.min(y))
+        print("PLOT MAX =", np.max(y))
 
         # napravi vremensku osu
         freq = 1000 / float(self.doubleSpinBox_TotalTime_ms.value())
