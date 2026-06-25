@@ -61,7 +61,7 @@ def find_project_root(start: Path):
 
 current = Path(__file__).resolve()
 project_root = find_project_root(current)
-
+#
 julia_path = shutil.which("julia")
 if julia_path:
     os.environ["PYTHON_JULIACALL_EXE"] = julia_path
