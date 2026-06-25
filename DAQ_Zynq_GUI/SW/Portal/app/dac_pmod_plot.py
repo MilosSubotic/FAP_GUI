@@ -118,9 +118,6 @@ if __name__ == "__main__":
 
     samples = generate_sine()
 
-    plot_waveform(
-        samples,
-        title="DAC PMOD — Sine"
-    )
+    plot_waveform( samples,  title="DAC PMOD — Sine")
 
     jl.send_samples(jl.Vector[jl.UInt32](samples.tolist()))

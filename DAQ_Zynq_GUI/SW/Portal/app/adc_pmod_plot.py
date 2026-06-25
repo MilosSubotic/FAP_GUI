@@ -44,11 +44,15 @@ def t_axis(n):
     return np.arange(n) / F_SMPL * 1000.0
 
 def capture(ch, n):
-    # Poziv Julia funkcije
-    samples = jl.capture_samples(ch, n)
 
-    # Julia Vector -> NumPy
-    return np.array(samples, dtype = np.uint32)
+    import threading
+    print("CAPTURE THREAD =", threading.get_ident())
+
+    print("P1")
+    samples = jl.capture_samples(ch, n)
+    print("P2")
+
+    return np.array(samples, dtype=np.uint32)
 
 """def capture(gate, ch, n):
     portal = Portal_Wormhole(BACKEND_USB, gate)

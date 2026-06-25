@@ -79,9 +79,11 @@ function set_cfg!(
 	@show M_pump_probe
 	@show M_pump_probe_needed
 	@show same
-	@show t_probe/m
-	@show t_probe_need/m
+	println("t_probe = ", t_probe)
+	println("t_probe_need = ", t_probe_need)
 
+
+	println("Writing registers...")
 	write_word(dac, dac_jmp_cfg.RM_pump_mod, UInt32(M_pump_probe))
 	write_word(dac, dac_jmp_cfg.RM_pump_th,  t_to_mod(t_pump))
 
@@ -97,4 +99,5 @@ function set_cfg!(
 	write_word(dac, dac_jmp_cfg.RM_V_probe,  UInt32(V_to_smpl(V_probe)))
 
 	write_word(dac, dac_jmp_cfg.RM_strobe, UInt32(1))
+	println("Registers written.")
 end

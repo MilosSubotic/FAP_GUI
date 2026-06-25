@@ -77,8 +77,22 @@ class arbcalc():
             tUp = np.linspace(0, upTime, int(upTime*sr), endpoint=False)
             tDown = np.linspace(0, downTime, int(downTime*sr), endpoint=False)
 
-            upData = self.pumpLevel - self.expAmplitude*(1-np.exp(-self.expRelaxation * tUp))
-            downData = self.zeroLevel + self.expAmplitude*(1-np.exp(-self.expRelaxation * tDown))
+            # Mala visokofrekventna sinusna ripla na platoima
+            rippleAmp = self.expAmplitude * 0.02      # probaj 0.01–0.03
+            rippleFreq = 10 * self.pumpFrequency      # probaj 10, 20 ili 30
+
+            upData = (
+                np.full(len(tUp), self.pumpLevel)
+                + rippleAmp * np.sin(2 * np.pi * rippleFreq * tUp)
+            )
+
+            downData = (
+                np.full(len(tDown), self.zeroLevel)
+                + rippleAmp * np.sin(2 * np.pi * rippleFreq * tDown)
+            )
+            
+          
+
             cycleData = np.concatenate((upData, downData))
             pumpData = np.tile(cycleData, nPumpPeriods-1)
             pumpData = np.concatenate((pumpData, upData)) #add one more Pump level

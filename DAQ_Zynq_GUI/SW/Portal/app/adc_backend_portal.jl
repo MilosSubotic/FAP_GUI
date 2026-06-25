@@ -4,8 +4,15 @@ const GATE = PG_ADC_PMOD_0
 
 function capture_samples(ch::Int, n::Int)
 
+    println("C1")
+
+    return zeros(UInt32, n)
+
     portal = Portal_Wormhole(BACKEND_USB, GATE)
+    println("J1")
+
     adc = ADC_PMOD_CTRL(portal)
+    println("J2")
 
     samples = zeros(UInt32, n)
 

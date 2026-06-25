@@ -35,10 +35,10 @@ class mockGen:
 
         print("Saved ArbCalc signal -> /tmp/arbcalc_signal.txt")
 
-        plt.figure()
+        """plt.figure()
         plt.plot(arb)
         plt.title("arbcalc output")
-        plt.show()
+        plt.show()"""
 
         if self.gen is False:
             return False
@@ -110,6 +110,7 @@ class mockGen:
         self.gen.output_enable = True
 
     print("Waveform sent")
+
     def stop(self):
         self.gen.output_enable = False
         print("Mock: stopped")

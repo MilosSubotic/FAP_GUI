@@ -51,6 +51,8 @@ import class_MySerial as myserial
 from juliacall import Main as jl
 from pathlib import Path
 
+from DAQ_Zynq_GUI.SW.Portal.app import jmp_backend
+
 def find_project_root(start: Path):
     for parent in [start] + list(start.parents):
         if (parent / ".git").exists():
@@ -70,32 +72,32 @@ os.environ["PYTHON_JULIACALL_PROJECT"] = str(project_root)
 
 from mockGen import mockGen
 
-from multiprocessing import Process, Queue
-def adc_process(queue, n_samples):
+from multiprocessing import Event, Process, Queue
 
-    print("ADC PROCESS STARTED")
-    print("QUEUE CHILD =", id(queue))
-    print("QUEUE CHILD TYPE =", type(queue))
-    #print("before import adc")
+def adc_process(queue, stop_event, n_samples):
+
     from DAQ_Zynq_GUI.SW.Portal.app import adc_pmod_plot as adc
-    #print("after import adc")
-
     import numpy as np
 
-    while True:
+    while not stop_event.is_set():
+
         print("before capture")
 
         raw = adc.capture(1, n_samples)
+
+        if stop_event.is_set():
+            break
 
         print("after capture")
 
         ch1 = np.asarray(adc.adc_to_mv(raw)).copy()
 
-        print("before put")
+        if stop_event.is_set():
+            break
 
         queue.put([ch1, np.zeros_like(ch1)])
 
-        print("after put")
+    print("ADC PROCESS EXIT")
 import threading
 
 from mock_scp import mockSCP # malo lepse koriscenje oopa
@@ -166,8 +168,12 @@ class MyUi(Ui_MainWindow):
         self.timerPlotSCP.setInterval(self.rePlotInterval_ms)
         self.timerPlotSCP.timeout.connect(self.plotSCP)
 
-        self.timerStart.setInterval(1000) 
+        self.timerStart.setInterval(1000)
         #self.timerStart.timeout.connect(self.boot)
+
+        # akvizicija na MAIN threadu (Julia puca ako se capture zove iz worker threada)
+        self.timerAcq = QtCore.QTimer()
+        self.timerAcq.timeout.connect(self.acquireOnce)
 
         #self.okButton_RangeScanStart
         #self.timerScanSaveDelay.setInterval(2000)
@@ -178,36 +184,39 @@ class MyUi(Ui_MainWindow):
         #self.esp32.connect()
 
 
-        self.adc_queue = Queue()
+        #self.adc_queue = Queue()
 
-        print("QUEUE MAIN =", id(self.adc_queue))
+        #print("QUEUE MAIN =", id(self.adc_queue))
 
-        self.adc_proc = Process(
-            target=adc_process,
-            args=(self.adc_queue, 32768)
-        )
+        #self.stop_event = Event()
+        #self.adc_proc = Process(
+        #    target=adc_process,
+        #    args=(self.adc_queue, self.stop_event, 32768)
+        #)
 
-        self.adc_proc.start()
+        # self.adc_proc.start()
 
-        self.timerADC = QtCore.QTimer()
+        """self.timerADC = QtCore.QTimer()
         self.timerADC.timeout.connect(self.updateADC)
-        self.timerADC.start(50)
+        self.timerADC.start(50)"""
 
         print("MAIN PID =", os.getpid())
         print("MAIN THREAD =", threading.get_ident())
 
 
     def updateADC(self):
+        print("updateADC called")
+
         while not self.adc_queue.empty():
+            print("GOT DATA")
             self.SCPData = self.adc_queue.get()
 
-            samples = len(self.SCPData[0])
-            sr = self.scp.scp.sample_rate
-            duration_ms = samples * 1000 / sr
+            # FIT uvek vidi poslednje podatke
+            self.dataSCPtoFITtab = self.SCPData
 
-            print("samples =", samples)
-            print("sr =", sr)
-            print("duration ms =", duration_ms)
+            # Ako je FIT tab otvoren, odmah ga osveži
+            if self.tabWidget.currentIndex() == 1:
+                self.fit()
 
             self.plotSCP()
 
@@ -411,6 +420,9 @@ class MyUi(Ui_MainWindow):
         self.comboBox_trigger.clear()
         self.comboBox_trigger.addItems(trigger_sources)
 
+        print("Starting acquisition worker")
+        #self.threadpool.start(self.theWorkerBlocks)
+
 
     def refreshSpectrumFolderCombo(self):
         #fl = glob.glob("./spectrums/*")
@@ -518,7 +530,13 @@ class MyUi(Ui_MainWindow):
                 # Get data:
                 print("before get_data")
 
-                self.SCPData = scp.get_data()
+                print("calling MockDevice.get_data()")
+                tmp = scp.get_data()
+                print("returned", type(tmp), len(tmp))
+
+                self.SCPData = tmp
+
+                print("SCPData assigned")
                 print("GETBLOCKS WRITING SCPDATA")
                 print("after get_data")
                 # print("Got SCP data!")
@@ -564,6 +582,48 @@ class MyUi(Ui_MainWindow):
                     """wav_obj = playsound.WaveObject.from_wave_file('Sounds/retro-game-notifi.wav')
                     play_obj = wav_obj.play()
                     self.soundPlayed = True""" # izlazi kad se ovo upali al se cuje zvuk
+
+
+    def acquireOnce(self):
+        # JEDAN prolaz akvizicije, na MAIN threadu (poziva ga timerAcq).
+        # Sve sto dira Juliju (adc.capture preko get_data) mora ostati ovde,
+        # jer iz Qt worker threada Julia runtime puca (SIGKILL).
+        scp = self.scp.scp
+
+        self.scpSet()
+        if scp.is_running:
+            scp.stop()
+        scp.start()
+
+        while not scp.is_data_ready:
+            time.sleep(0.001)
+
+        # >>> Julia capture se desava ovde, ali na main threadu -> ne puca <<<
+        self.SCPData = scp.get_data()
+
+        # snimanje (ista logika kao u getBlocks)
+        if self.checkBox_SaveData.isChecked():
+            self.doubleSpinBox_RecordsToSave.setDisabled(True)
+            self.saveData(self.SCPData)
+            n = int(self.doubleSpinBox_RecordsToSave.value())
+            if self.countRemainingToSave == n:  # prvi fajl
+                self.soundPlayed = False
+            if n != 0:
+                self.countRemainingToSave -= 1
+                self.label_RemainingToSave.setText("Remaining: " + str(self.countRemainingToSave))
+                if self.countRemainingToSave <= 0:
+                    self.countRemainingToSave = n
+                    self.checkBox_SaveData.setChecked(False)
+        else:
+            self.doubleSpinBox_RecordsToSave.setDisabled(False)
+            self.label_RemainingToSave.setText("Finished")
+
+        # FIT tab uvek vidi sveze podatke
+        self.dataSCPtoFITtab = self.SCPData
+        if self.tabWidget.currentIndex() == 1:
+            self.fit()
+
+        self.plotSCP()
 
 
     def plotArb(self, t, y):
@@ -1002,13 +1062,15 @@ class MyUi(Ui_MainWindow):
         raise Exception(f"Sorry, {el} not connected with {function}")
 
     def tabChanged(self):
+        print("TAB CHANGED")
+        print("SCPData =", type(self.SCPData))
+        print(self.SCPData)
         if self.tabWidget.currentIndex() == 1:
-            print("FIT data set!")
-            if self.scp.scp is None:
-                n = cr.white_noise(.01, 3125000, 312500, mu=0)
-                self.dataSCPtoFITtab = [n, n]
-            else:
-                self.dataSCPtoFITtab = self.SCPData
+            if isinstance(self.SCPData, bool):
+                print("No ADC data yet")
+                return
+
+            self.dataSCPtoFITtab = self.SCPData
             self.fitUISet()
 
     def fitUISet(self):
@@ -1042,6 +1104,19 @@ class MyUi(Ui_MainWindow):
     """Plot, fit, filter, analyse..."""
 
     def fit(self):
+
+
+        if isinstance(self.dataSCPtoFITtab, bool):
+            print("FIT: no data yet")
+            return
+
+        if self.dataSCPtoFITtab is None:
+            print("FIT: no data yet")
+            return
+
+        if len(self.dataSCPtoFITtab) < 2:
+            print("FIT: invalid data")
+            return
 
         if self.radioButton_FITSource_CH1.isChecked():
             self.dataFIT = self.dataSCPtoFITtab[0]
@@ -1343,18 +1418,24 @@ class MyUi(Ui_MainWindow):
 
         # msg.buttonClicked.connect(self.popup_button)
     def genStartStop(self):
-        # self.okButton_GeneratorStart.clicked.connect(self.genStartStop)
         if(self.gen.gen is not None):
-            if self.gen.gen.output_enable: # output_on
+            if self.gen.gen.output_enable:
                 self.gen.stop()
             else:
                 print("STOP ADC")
-
-                self.adc_proc.terminate()
-                self.adc_proc.join()
-
                 print("ADC STOPPED")
-                
+
+                if not hasattr(self, "acquisitionStarted"):
+                    self.acquisitionStarted = False
+
+                if not self.acquisitionStarted:
+                    print("Starting acquisition timer")
+                    self.timerAcq.start(50)   # ~20 Hz; podigni broj (npr 100) ako GUI seca
+                    self.acquisitionStarted = True
+
+                import threading
+                print("MAIN THREAD =", threading.get_ident())
+
                 self.arbSet()
         else:
             print("Nema generatora!")
@@ -1371,6 +1452,25 @@ class MyUi(Ui_MainWindow):
                          expAmplitude=float(self.doubleSpinBox_ExpAmplitude.value()),
                          expRelaxation=float(self.doubleSpinBox_ExpRelaxation.value())
                          )
+        
+        # OVDE IDE DAC_JMP CONFIG
+        try:
+            jmp_backend.set_cfg(
+                t_pump=float(self.doubleSpinBox_PumpTime_ms.value()) / 1000,
+                t_probe=(
+                    float(self.doubleSpinBox_TotalTime_ms.value())
+                    - float(self.doubleSpinBox_PumpTime_ms.value())
+                ) / 1000,
+                f_2larmor=float(self.doubleSpinBox_Frequency_Hz.value()),
+                V_pump1=float(self.doubleSpinBox_PumpLevel.value()),
+                V_pump2=float(self.doubleSpinBox_ZeroLevel.value()),
+                V_probe=float(self.doubleSpinBox_ProbeLevel.value())
+            )
+
+        except Exception as e:
+            print("DAC_JMP configuration failed:")
+            print(e)
+
         arb = arbObj.arb()
         """arb = np.concatenate([
             np.ones(2000) * 0.6,
@@ -1384,8 +1484,8 @@ class MyUi(Ui_MainWindow):
         #self.gen.plot()
 
         self.plotArbGenerated()    
-        print("Peak-to-peak =", np.max(arb) - np.min(arb))
-        print("Mean =", np.mean(arb))   
+        print("Peak-to-peak =", np.max(y) - np.min(y))
+        print("Mean =", np.mean(y))
         self.gen.start()
 
     def plotArbGenerated(self):
@@ -1413,7 +1513,11 @@ class MyUi(Ui_MainWindow):
     def onClose(self):
         print("Time to close...")
         self.timerPlotSCP.stop()
-        #self.gen.stop()
+        try:
+            self.timerAcq.stop()   # bilo: self.timerADC.stop() -> timerADC ne postoji, rusilo gasenje
+        except Exception:
+            pass
+        self.gen.stop()
         self.scpWorkerStop(self.theWorkerBlocks)
 
         # stop save
@@ -1427,6 +1531,31 @@ class MyUi(Ui_MainWindow):
         # save settings
         self.saveSettings()
 
+        self.timerPlotSCP.stop()
+
+        try:
+            self.timer.stop()
+        except:
+            pass
+
+        print("Stopping ADC process...")
+        '''
+        self.stop_event.set()
+
+        if self.adc_proc is not None:
+            self.adc_proc.join(timeout=3)
+
+            if self.adc_proc.is_alive():
+                print("ADC still alive -> terminate")
+                self.adc_proc.terminate()
+                self.adc_proc.join()
+
+        print("Closing queue")
+
+        if self.adc_queue is not None:
+            self.adc_queue.close()
+            self.adc_queue.join_thread()
+        '''
         print("|End of onClose!")
 
     def saveSettings(self, file='settings.zg.npy'):

@@ -6,8 +6,6 @@ import threading
 import numpy as np
 import time
 
-from multiprocessing import Process, Queue
-
 def worker(q, n):
     import os
     import threading
@@ -55,26 +53,13 @@ class MockDevice:
 
     def get_data(self):
 
-        q = Queue()
+        print("before capture")
 
-        p = Process(
-            target=worker,
-            args=(q, self.record_length)
-        )
+        raw = adc.capture(1, self.record_length)
 
-        print("before process")
+        print("after capture")
 
-        p.start()
-
-        print("before q.get")
-
-        raw = q.get()
-
-        print("after q.get")
-
-        p.join()
-
-        ch1 = adc.adc_to_mv(raw)
+        ch1 = np.asarray(adc.adc_to_mv(raw))
         ch2 = np.zeros_like(ch1)
 
         return [ch1, ch2]
