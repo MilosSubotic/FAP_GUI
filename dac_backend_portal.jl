@@ -3,7 +3,7 @@ include(joinpath(@__DIR__,
     "SW",
     "Portal",
     "Portal_inc.jl"))
-
+    
 const GATE = PG_DAC_PMOD_0
 
 const VREF_MV = 2500.0
@@ -43,6 +43,7 @@ function send_samples(samples::Vector{UInt32})
     println("D1")
 
     dac = DAC_PMOD_CTRL(portal)
+    #dac = DAC_Jmp(portal)
 
     println("D2")
 

@@ -52,6 +52,7 @@ from juliacall import Main as jl
 from pathlib import Path
 
 from DAQ_Zynq_GUI.SW.Portal.app import jmp_backend
+from test_dac_jmp import set_cfg_py
 
 def find_project_root(start: Path):
     for parent in [start] + list(start.parents):
@@ -1455,7 +1456,8 @@ class MyUi(Ui_MainWindow):
         
         # OVDE IDE DAC_JMP CONFIG
         try:
-            jmp_backend.set_cfg(
+            print("NAMESTAMO JMP")
+            set_cfg_py(
                 t_pump=float(self.doubleSpinBox_PumpTime_ms.value()) / 1000,
                 t_probe=(
                     float(self.doubleSpinBox_TotalTime_ms.value())

@@ -20,26 +20,29 @@ def mon_probe():
 
     while jmp_backend.probe():
         time.sleep(0.001)
-
+    
     t1 = time.time()
-
+    
     print(f"Probe = {(t1 - t0) * 1000:.2f} ms")
 
+def set_cfg_py(t_pump, t_probe, f_2larmor, V_pump1, V_pump2, V_probe):
+    print("Initial probe")
+    mon_probe()
 
-print("Initial probe")
-mon_probe()
+    print("Writing configuration")
 
-print("Writing configuration")
+    jmp_backend.set_cfg(
+        t_pump=t_pump,
+        t_probe=t_probe,
+        f_2larmor=f_2larmor,
+        V_pump1=V_pump1,
+        V_pump2=V_pump2,
+        V_probe=V_probe,
+    )
 
-jmp_backend.set_cfg(
-    t_pump=10e-3,
-    t_probe=20e-3,
-    f_2larmor=10e3,
-    V_pump1=0.5,
-    V_pump2=1.5,
-    V_probe=1.0,
-)
+    print("Configured")
 
-print("Configured")
+    mon_probe()
 
-mon_probe()
+if __name__ == "__main__":
+    set_cfg_py(10e-3, 20e-3, 10e3, 0.5, 1.5, 1.0)
