@@ -1,0 +1,106 @@
+# FAP GUI Documentation
+
+The FAP GUI is a Python-based graphical interface used for signal acquisition, waveform generation, visualization, and hardware control. The application supports both mock hardware for development and real ADC/DAC PMOD devices through a Julia backend.
+
+## Hardware Abstraction Layer
+
+### Motivation
+
+The first task was to implement a hardware abstraction layer for the oscilloscope. The goal was to allow the GUI to run without requiring physical hardware.
+
+### Scope abstraction
+
+An abstract `Scope` class was implemented to define the common interface for every oscilloscope implementation.
+
+The interface provides methods for:
+
+- `set()` – configure acquisition parameters (mode, sample rate, record length, ...)
+- `getBlock()` – acquire a single block of data
+- `getBlockS()` – acquire a continuous data stream
+- `set_trigger()` – configure the acquisition trigger
+
+### Mock oscilloscope
+
+A mock oscilloscope implementation was added that generates artificial data while exposing the same interface as the real hardware.
+
+This allowed the GUI to be developed and tested independently of the physical oscilloscope.
+
+### Additional work
+
+- Updated project dependencies
+- Added error handling for uninitialized class fields
+- Successfully ran the first GUI version using generated data
+- Added comments throughout the UI class to document widgets, class members, and subplot layout
+
+---
+
+## Mock Signal Generator
+
+### Design
+
+A mock generator was implemented using two classes:
+
+- `FakeGen` – represents the simulated hardware
+- `mockGen` – interface used by the GUI
+
+### Methods
+
+- `arbLoad()` – loads an arbitrary waveform into the generator
+
+### Results
+
+After implementing `plotArbGenerated()`, arbitrary waveforms could be visualized directly inside the GUI.
+
+The fitting function was then updated to correctly process generated waveforms.
+
+---
+
+## Julia Backend Integration
+
+### Motivation
+
+The oscilloscope backend is implemented in Julia, therefore communication between Python and Julia had to be established.
+
+### Initial Hardware Integration
+
+Implemented:
+
+- Julia script generating a sine wave
+- Python script invoking the Julia script
+
+This served as a proof of concept for the `PythonCall` / `JuliaCall` libraries.
+
+### ADC/DAC integration
+
+The Julia ADC and DAC modules were integrated into:
+
+1. the mock oscilloscope
+2. the GUI
+
+### Development process
+
+The integration required several iterations:
+
+1. Signal generation worked but visualization relied on raw Julia output.
+2. DAC visualization was integrated successfully.
+3. ADC integration caused instability.
+4. Concurrent processes were introduced for signal generation and visualization.
+5. Crashes were traced to overlapping task partitioning.
+6. Responsibilities were separated into independent processes.
+7. This architecture enabled stable live plotting.
+
+---
+
+## ADC/DAC PMOD Integration
+
+Implemented:
+
+- ADC worker process
+- Queue-based acquisition
+- ADC PMOD integration
+- ArbCalc waveform connection to the DAC backend
+- DAC sample conversion
+- USB/DMA debugging infrastructure
+- Resource management improvements
+- End-to-end ADC acquisition verification
+- DAC buffer loading verification
