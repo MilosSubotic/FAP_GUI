@@ -1,6 +1,7 @@
 from DAQ_Zynq_GUI.SW.Portal.app import adc_pmod_plot as adc
 #from DAQ_Zynq_GUI.SW.Portal.app import dac_pmod_plot as dac
 from scope_interface import Scope
+from multiprocessing import Process, Queue
 
 import threading
 import numpy as np
@@ -52,19 +53,12 @@ class MockDevice:
         return True
 
     def get_data(self):
-
-        print("before capture")
-
         raw = adc.capture(1, self.record_length)
-
-        print("after capture")
 
         ch1 = np.asarray(adc.adc_to_mv(raw))
         ch2 = np.zeros_like(ch1)
 
         return [ch1, ch2]
-    
-
 
 class mockSCP(Scope):  # ili MockScope ako pratiš abstrakciju
     def __init__(self):

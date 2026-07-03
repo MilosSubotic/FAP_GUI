@@ -1,14 +1,20 @@
 include("../Portal_inc.jl")
+include(joinpath(@__DIR__, "..", "..", "..", "..", "globalUSBvariables.jl"))
 
 const GATE = PG_ADC_PMOD_0
 
 function capture_samples(ch::Int, n::Int)
 
     println("C1")
+    println("APP ADC BACKEND LOADED")
 
     return zeros(UInt32, n)
 
-    portal = Portal_Wormhole(BACKEND_USB, GATE)
+    if adc_portal[] === nothing
+        adc_portal[] = Portal_Wormhole(BACKEND_USB, GATE)
+    end
+
+    portal = adc_portal[]
     println("J1")
 
     adc = ADC_PMOD_CTRL(portal)
@@ -31,7 +37,6 @@ function capture_samples(ch::Int, n::Int)
         read_buf!(adc, ch, samples)
 
     finally
-        close(adc.portal)
     end
 
     return samples

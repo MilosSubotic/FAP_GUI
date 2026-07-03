@@ -1,4 +1,5 @@
 include("../Portal_inc.jl")
+include(joinpath(@__DIR__, "..", "..", "..", "..", "globalUSBvariables.jl"))
 
 const GATE = PG_DAC_PMOD_0
 
@@ -32,7 +33,11 @@ end
 
 function send_samples(samples::Vector{UInt32})
 
-    portal = Portal_Wormhole(BACKEND_USB, GATE)
+    if dac_pmod_portal[] === nothing
+        dac_pmod_portal[] = Portal_Wormhole(BACKEND_USB, GATE)
+    end
+
+    portal = dac_pmod_portal[]
     dac = DAC_PMOD_CTRL(portal)
 
     try
@@ -58,8 +63,6 @@ function send_samples(samples::Vector{UInt32})
         end
 
     finally
-
-        close(dac.portal)
     end
 
     return true

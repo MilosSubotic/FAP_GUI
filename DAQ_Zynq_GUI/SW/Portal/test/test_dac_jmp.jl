@@ -1,10 +1,11 @@
 #!/usr/bin/env julia
 
 include("/home/lazar-zubovic/Desktop/FAP_GUI/DAQ_Zynq_GUI/SW/Portal/Portal_inc.jl")
+include(joinpath(@__DIR__, "..", "..", "..", "..", "globalUSBvariables.jl"))
 
-
-portal = Portal_Wormhole(BACKEND_USB, PG_DAC_JMP)
-dac = DAC_Jmp(portal)
+#portal = Portal_Wormhole(BACKEND_USB, PG_DAC_JMP)
+#dac = DAC_Jmp(portal)
+setup_usb(BACKEND_USB, PG_DAC_JMP)
 
 try
 	@show read_word(dac, dac_jmp_cfg.RM_magic)

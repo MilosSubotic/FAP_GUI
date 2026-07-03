@@ -51,8 +51,7 @@ import class_MySerial as myserial
 from juliacall import Main as jl
 from pathlib import Path
 
-from DAQ_Zynq_GUI.SW.Portal.app import jmp_backend
-from test_dac_jmp import set_cfg_py
+import DAQ_Zynq_GUI.SW.Portal.app.jmp_backend as jmp_backend
 
 def find_project_root(start: Path):
     for parent in [start] + list(start.parents):
@@ -76,6 +75,7 @@ from mockGen import mockGen
 from multiprocessing import Event, Process, Queue
 
 def adc_process(queue, stop_event, n_samples):
+    print("ADC PROCESS STARTED")
 
     from DAQ_Zynq_GUI.SW.Portal.app import adc_pmod_plot as adc
     import numpy as np
@@ -99,6 +99,7 @@ def adc_process(queue, stop_event, n_samples):
         queue.put([ch1, np.zeros_like(ch1)])
 
     print("ADC PROCESS EXIT")
+
 import threading
 
 from mock_scp import mockSCP # malo lepse koriscenje oopa
@@ -185,28 +186,36 @@ class MyUi(Ui_MainWindow):
         #self.esp32.connect()
 
 
-        #self.adc_queue = Queue()
+        self.adc_queue = Queue()
 
-        #print("QUEUE MAIN =", id(self.adc_queue))
+        print("QUEUE MAIN =", id(self.adc_queue))
 
-        #self.stop_event = Event()
-        #self.adc_proc = Process(
-        #    target=adc_process,
-        #    args=(self.adc_queue, self.stop_event, 32768)
-        #)
+        self.stop_event = Event()
+        self.adc_proc = Process(
+            target=adc_process,
+            args=(self.adc_queue, self.stop_event, 32768)
+        )
 
-        # self.adc_proc.start()
+        print("NOT STARTING ADC PROCESS")
+        #self.adc_proc.start()
 
-        """self.timerADC = QtCore.QTimer()
+        import time
+
+        time.sleep(0.5)
+
+        print("ADC alive:", self.adc_proc.is_alive())
+        print("ADC exitcode:", self.adc_proc.exitcode)
+
+        self.timerADC = QtCore.QTimer()
         self.timerADC.timeout.connect(self.updateADC)
-        self.timerADC.start(50)"""
+        self.timerADC.start(50)
 
         print("MAIN PID =", os.getpid())
         print("MAIN THREAD =", threading.get_ident())
 
 
     def updateADC(self):
-        print("updateADC called")
+        #print("updateADC called")
 
         while not self.adc_queue.empty():
             print("GOT DATA")
@@ -589,6 +598,9 @@ class MyUi(Ui_MainWindow):
         # JEDAN prolaz akvizicije, na MAIN threadu (poziva ga timerAcq).
         # Sve sto dira Juliju (adc.capture preko get_data) mora ostati ovde,
         # jer iz Qt worker threada Julia runtime puca (SIGKILL).
+        
+        print("ACQUIRE ONCE")
+        
         scp = self.scp.scp
 
         self.scpSet()
@@ -689,6 +701,17 @@ class MyUi(Ui_MainWindow):
         self.ch1Plot.clear()
         self.ch2Plot.clear()
 
+        self.ch1Plot.setLabel('bottom', "time (ms)")
+        self.ch1Plot.setLabel('left', "ADC")
+
+        self.ch1Plot.plot(t, self.SCPData[0], pen='y')
+
+        return
+
+        """if not hasattr(self.gen, "generated_signal"):
+            print("No generated signal yet")
+            return"""
+
         arb = self.gen.generated_signal
 
         print("ARB PLOT MIN =", np.min(arb))
@@ -723,12 +746,12 @@ class MyUi(Ui_MainWindow):
             )
 
         #self.ch1Plot.plot(t, self.SCPData[0])
-        print("PLOTTING ARBCALC DIRECTLY")
+        """print("PLOTTING ARBCALC DIRECTLY")
         self.ch1Plot.plot(t[:len(self.gen.generated_signal)],
                             self.gen.generated_signal)
         
         print("RETURNING AFTER ARBCALC PLOT")
-        return
+        return"""
         print(
             "CH1:",
             np.min(self.SCPData[0]),
@@ -1419,27 +1442,31 @@ class MyUi(Ui_MainWindow):
 
         # msg.buttonClicked.connect(self.popup_button)
     def genStartStop(self):
-        if(self.gen.gen is not None):
-            if self.gen.gen.output_enable:
-                self.gen.stop()
-            else:
-                print("STOP ADC")
-                print("ADC STOPPED")
-
-                if not hasattr(self, "acquisitionStarted"):
-                    self.acquisitionStarted = False
-
-                if not self.acquisitionStarted:
-                    print("Starting acquisition timer")
-                    self.timerAcq.start(50)   # ~20 Hz; podigni broj (npr 100) ako GUI seca
-                    self.acquisitionStarted = True
-
-                import threading
-                print("MAIN THREAD =", threading.get_ident())
-
-                self.arbSet()
-        else:
+        if self.gen.gen is None:
             print("Nema generatora!")
+            return
+
+        if self.gen.gen.output_enable:
+            print("Stopping generator")
+            self.gen.stop()
+
+            if hasattr(self, "timerAcq"):
+                self.timerAcq.stop()
+
+            self.acquisitionStarted = False
+            return
+
+        print("Starting generator")
+
+        import threading
+        print("MAIN THREAD =", threading.get_ident())
+
+        # Za test NEMOJ slati generator
+        # self.arbSet()
+
+        print("Starting acquisition timer")
+        self.timerAcq.start(50)
+        self.acquisitionStarted = True
 
     def arbSet(self):
         arbObj = arbcalc(totalTime=float(self.doubleSpinBox_TotalTime_ms.value()) / 1000,
@@ -1455,9 +1482,9 @@ class MyUi(Ui_MainWindow):
                          )
         
         # OVDE IDE DAC_JMP CONFIG
-        try:
+        """try:
             print("NAMESTAMO JMP")
-            set_cfg_py(
+            jmp_backend.set_cfg(
                 t_pump=float(self.doubleSpinBox_PumpTime_ms.value()) / 1000,
                 t_probe=(
                     float(self.doubleSpinBox_TotalTime_ms.value())
@@ -1471,24 +1498,19 @@ class MyUi(Ui_MainWindow):
 
         except Exception as e:
             print("DAC_JMP configuration failed:")
-            print(e)
+            print(e)"""
 
         arb = arbObj.arb()
-        """arb = np.concatenate([
-            np.ones(2000) * 0.6,
-            np.ones(2000) * (-0.5),
-            np.ones(7000) * 0.0
-        ])"""
         t, y = arb
         if not self.gen.arbLoad(y):
             self.statusbar.showMessage("The Generator is not accesible.", 2000)
 
-        #self.gen.plot()
-
         self.plotArbGenerated()    
         print("Peak-to-peak =", np.max(y) - np.min(y))
         print("Mean =", np.mean(y))
-        self.gen.start()
+        #self.gen.start()
+        print("Generator skipped for demo")
+        return
 
     def plotArbGenerated(self):
         if not hasattr(self.gen, "generated_signal"):
@@ -1876,7 +1898,10 @@ class MyUi(Ui_MainWindow):
 ##############################################################################################
 
 def main():
-    
+    from DAQ_Zynq_GUI.SW.Portal.app import jmp_backend
+    from multiprocessing import freeze_support
+    freeze_support()
+
     app = QtWidgets.QApplication(sys.argv)
     app.setStyleSheet(qdarkgraystyle.load_stylesheet())
 

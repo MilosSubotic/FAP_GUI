@@ -3,6 +3,8 @@ include(joinpath(@__DIR__,
     "SW",
     "Portal",
     "Portal_inc.jl"))
+
+include(joinpath(@__DIR__, "globalUSBvariables.jl"))
     
 const GATE = PG_DAC_PMOD_0
 
@@ -38,7 +40,11 @@ function send_samples(samples::Vector{UInt32})
 
     println("D0")
 
-    portal = Portal_Wormhole(BACKEND_USB, GATE)
+    if dac_pmod_portal[] === nothing
+        dac_pmod_portal[] = Portal_Wormhole(BACKEND_USB, GATE)
+    end
+
+    portal = dac_pmod_portal[]
 
     println("D1")
 
@@ -49,9 +55,11 @@ function send_samples(samples::Vector{UInt32})
 
     try
 
-        dma = dma_write_done(dac)
+        #dma = dma_write_done(dac)
 
-        println("DMA = ", dma)
+        #println("DMA = ", dma)
+        println("SKIPPING DMA READ")
+        dma = 1
 
         if dma == 1
 
