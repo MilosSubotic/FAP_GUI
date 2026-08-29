@@ -6,3 +6,4 @@ scipy
 qdarkgraystyle
 simpleaudio
 pyserial
+matplotlib

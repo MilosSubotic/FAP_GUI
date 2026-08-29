@@ -9,6 +9,8 @@
 # C:\Users\Zoran\Anaconda3\Library\bin\pyuic5 gui.ui -o gui.py
 
 import multiprocessing
+import shutil
+import os
 multiprocessing.set_start_method("spawn", force=True)
 from queue import Empty
 
@@ -19,7 +21,6 @@ import qdarkgraystyle  # https://pypi.org/project/qdarkgraystyle/
 from PyQt5.QtCore import QThreadPool
 from QtWorker import Worker
 import sys
-import os
 import logging
 from PyQt5 import QtCore  # conda install pyqt // pip install PyQt5==5.15.0
 from PyQt5 import QtWidgets
@@ -49,9 +50,14 @@ import glob
 
 import class_MySerial as myserial
 from juliacall import Main as jl
+jl.include("DAQ_Zynq_GUI/SW/Portal/Portal.jl")
+jl.seval("using .Portal")   # juliacall has no jl.using — use seval for bare `using` statements
+
 from pathlib import Path
 
-import DAQ_Zynq_GUI.SW.Portal.app.jmp_backend as jmp_backend
+import DAQ_Zynq_GUI.SW.Portal.app.dac_jmp_backend as jmp_backend
+
+from pathlib import Path
 
 def find_project_root(start: Path):
     for parent in [start] + list(start.parents):
@@ -60,15 +66,16 @@ def find_project_root(start: Path):
     raise RuntimeError("Project root not found")
 
 current = Path(__file__).resolve()
-project_root = find_project_root(current)
-#
+project_root = find_project_root(current)          # ← define FIRST
+
+# THEN set the environment variables
 julia_path = shutil.which("julia")
 if julia_path:
     os.environ["PYTHON_JULIACALL_EXE"] = julia_path
 else:
     raise FileNotFoundError("Could not find 'julia' in the system PATH.")
 
-os.environ["PYTHON_JULIACALL_PROJECT"] = str(project_root)
+os.environ["PYTHON_JULIACALL_PROJECT"] = str(project_root) + "/DAQ_Zynq_GUI/SW/Portal/app"
 
 from mockGen import mockGen
 
@@ -102,7 +109,7 @@ def adc_process(queue, stop_event, n_samples):
 
 import threading
 
-from mock_scp import mockSCP # malo lepse koriscenje oopa
+from mockScp import mockScope  # malo lepse koriscenje oopa
 # extend Ui_MainWindow class
 class MyUi(Ui_MainWindow):
 
@@ -158,11 +165,10 @@ class MyUi(Ui_MainWindow):
 
         self.dialogs = list()
 
-        self.gen = mockGen()
-        self.scp = mockSCP()
+        self.gen = mockGen()  # initialize generator with ADC_LVDS backend
+        self.scp = mockScope(adc_type="ADC_LVDS", channel=1)
 
         self.threadpool = QThreadPool()
-        self.theWorkerBlocks = Worker(self.getBlocks)  # Any other args, kwargs are passed to the run function
         self.theWorkerSave = Worker(self.SaveData)  # Any other args, kwargs are passed to the run function
         print("Multithreading with maximum %d threads" % self.threadpool.maxThreadCount())
 
@@ -179,8 +185,6 @@ class MyUi(Ui_MainWindow):
 
         #self.okButton_RangeScanStart
         #self.timerScanSaveDelay.setInterval(2000)
-
-        self.theWorkerBlocks_enabled = True
 
         self.esp32 = myserial.MySerial()
         #self.esp32.connect()
@@ -289,7 +293,9 @@ class MyUi(Ui_MainWindow):
         self.radioButton_FITSource_CH2.clicked.connect(self.fitUISet)
         self.pushButton_Set_FIT_init.clicked.connect(self.copyFITtoInit)
         self.pushButton_SelectFolder.clicked.connect(self.selectFolder)
-        self.lineEdit_FolderName.setText(os.getcwd() + "/data/") # napravili folder data
+        data_dir = os.path.join(os.getcwd(), "data")
+        os.makedirs(data_dir, exist_ok=True)
+        self.lineEdit_FolderName.setText(data_dir + "/")
         self.comboBox_trigger.currentIndexChanged.connect(self.trigger_changed)
 
         # change CH parameters on the data tab
@@ -393,7 +399,6 @@ class MyUi(Ui_MainWindow):
         self.tabWidget.setCurrentIndex(0)
 
         # Execute
-        #self.scpWorkerStart(self.theWorkerBlocks)
         self.timerPlotSCP.start()
         #self.genStartStop()
 
@@ -431,7 +436,6 @@ class MyUi(Ui_MainWindow):
         self.comboBox_trigger.addItems(trigger_sources)
 
         print("Starting acquisition worker")
-        #self.threadpool.start(self.theWorkerBlocks)
 
 
     def refreshSpectrumFolderCombo(self):
@@ -441,28 +445,6 @@ class MyUi(Ui_MainWindow):
         self.comboBox_SelectVCSELLSpectrum.addItems(fl)
 
         #self.comboBox_SelectVCSELLSpectrum
-    def scpWorkerStart(self, worker):
-
-        print("Boot SCP from worker")
-        self.scpSet()
-        try:
-            worker.signals.result.connect(self.res)
-            worker.signals.finished.connect(self.fini)
-            worker.signals.progress.connect(self.prog)
-
-            # Execute
-            self.threadpool.start(worker)
-            print("Worker read SCP data Started")
-        except Exception as e:
-            print("scpWorkerStart exception: ", e)
-
-    def scpWorkerStop(self, worker):
-        try:
-            self.theWorkerBlocks_enabled = False
-
-            #self.threadpool.stop(worker)
-        except Exception as e:
-            print("scpWorkerStop exception: ", e)
 
     def SaveData(self, progress_callback):
         pass
@@ -505,94 +487,6 @@ class MyUi(Ui_MainWindow):
 
         return False
 
-    def getBlocks(self, progress_callback):
-        print("Worker here")
-        print("GETBLOCKS CALLED")
-
-        scp = self.scp.scp
-        while self.theWorkerBlocks_enabled:
-            if self.radioButton_modeBlock.isChecked():
-                # block mode
-                if scp.is_running and scp.measure_mode == "STREAM":
-                    # change from STREAM to BLOCK
-
-                    self.scpSet() # set
-
-                    if self.scp.status_settings_changed:
-                        scp.stop()
-                        while scp.is_running:
-                            time.sleep(0.01)  # wait for stop
-                        print("SCP settings changed, stopped SCP")
-                        self.scpSet() #set when stooped
-                        scp.start()
-                        while not scp.is_running:
-                            time.sleep(0.01)  # wait for start
-                        print("SCP started after settings changed")
-                else:
-                    self.scpSet()  # set SCP parameters
-                    if scp.is_running:
-                        scp.stop()
-                    scp.start()
-                # Wait for measurement to complete:
-                while not scp.is_data_ready:
-                    time.sleep(0.01)  # 10 ms delay, to save CPU time
-
-                # Get data:
-                print("before get_data")
-
-                print("calling MockDevice.get_data()")
-                tmp = scp.get_data()
-                print("returned", type(tmp), len(tmp))
-
-                self.SCPData = tmp
-
-                print("SCPData assigned")
-                print("GETBLOCKS WRITING SCPDATA")
-                print("after get_data")
-                # print("Got SCP data!")
-                # print(f"scp {scp.sample_rate=}")
-                # print(f" self.SCPData len = {len(self.SCPData[0])}")
-            else:
-                # stream mode
-                # print("Stream mode")
-                if scp.measure_mode == "BLOCK":
-                    # change from BLOCK to STREAM
-                    self.scpSet()
-                    scp.start()
-                else:
-                    if not scp.is_running:
-                        scp.start()
-
-                while not scp.is_data_ready:
-                    time.sleep(0.01)  # 10 ms delay, to save CPU time
-
-                # Get data:
-                self.SCPData = scp.get_data()
-                #print("Got SCP data!")
-                #print(f"scp {scp.sample_rate=}")
-            # print(scp.measure_mode)
-            if self.checkBox_SaveData.isChecked():
-                self.doubleSpinBox_RecordsToSave.setDisabled(True)
-                self.saveData(self.SCPData)
-
-                #count remaining to save
-                n = int(self.doubleSpinBox_RecordsToSave.value())
-                if self.countRemainingToSave == n: #first file
-                    self.soundPlayed = False
-                if n != 0:
-                    self.countRemainingToSave -= 1
-                    self.label_RemainingToSave.setText("Remaining: " + str(self.countRemainingToSave))
-                    if self.countRemainingToSave <= 0:
-                        self.countRemainingToSave = n
-                        self.checkBox_SaveData.setChecked(False)
-            else:
-                self.doubleSpinBox_RecordsToSave.setDisabled(False)
-                self.label_RemainingToSave.setText("Finished")
-                if not self.soundPlayed:
-                    """wav_obj = playsound.WaveObject.from_wave_file('Sounds/retro-game-notifi.wav')
-                    play_obj = wav_obj.play()
-                    self.soundPlayed = True""" # izlazi kad se ovo upali al se cuje zvuk
-
 
     def acquireOnce(self):
         # JEDAN prolaz akvizicije, na MAIN threadu (poziva ga timerAcq).
@@ -604,12 +498,12 @@ class MyUi(Ui_MainWindow):
         scp = self.scp.scp
 
         self.scpSet()
-        if scp.is_running:
-            scp.stop()
-        scp.start()
+        #if scp.is_running:
+        #    scp.stop()
+        #scp.start()
 
-        while not scp.is_data_ready:
-            time.sleep(0.001)
+        #while not scp.is_data_ready:
+            #time.sleep(0.001)
 
         # >>> Julia capture se desava ovde, ali na main threadu -> ne puca <<<
         self.SCPData = scp.get_data()
@@ -1039,9 +933,7 @@ class MyUi(Ui_MainWindow):
             return "stream"
 
     def getSampleRate(self):
-        return self.scp.srs.get(self.comboBox_SampleRate.currentText(), 3125000)
-
-    """ Worker signal functions """
+        return self.scp.srs.get(self.comboBox_SampleRate.currentText(), 3125000)  
 
     def res(self, res):
         pass
@@ -1051,12 +943,6 @@ class MyUi(Ui_MainWindow):
 
     def prog(self, n):
         pass
-
-    # DA LI JE BOOT POTREBAN TO NIKO NE ZNA
-    """def boot(self):
-        # Execute
-        print("Boot SCP")
-        self.threadpool.start(self.theWorkerBlocks)"""
 
     def setCH_1_2(self):
         # print("setCH_1_2")
@@ -1110,7 +996,7 @@ class MyUi(Ui_MainWindow):
             self.doubleSpinBox_FITStop_ms.setValue(fitStop)
             self.doubleSpinBox_FIT_f0.setValue(self.doubleSpinBox_Frequency_Hz.value())
             if self.scp.scp is None:
-                self.FITSampleRate = 3125000
+                self.FITSampleRate = ADC_SAMPLE_RATE
             else:
                 self.FITSampleRate = self.scp.scp.sample_rate
 
@@ -1437,8 +1323,11 @@ class MyUi(Ui_MainWindow):
     import shutil
     def showDiskSpace(self):
         GB = 2**30
-        total, used, free = shutil.disk_usage(self.lineEdit_FolderName.text()) # putanja do foldera nije bila dobra
-        self.label_DiskSpace.setText(f"Free space: {free/GB:.2f} GB")
+        try:
+            total, used, free = shutil.disk_usage(self.lineEdit_FolderName.text())
+            self.label_DiskSpace.setText(f"Free space: {free/GB:.2f} GB")
+        except FileNotFoundError:
+            self.label_DiskSpace.setText("Free space: N/A (Folder Missing)")
 
         # msg.buttonClicked.connect(self.popup_button)
     def genStartStop(self):
@@ -1542,7 +1431,6 @@ class MyUi(Ui_MainWindow):
         except Exception:
             pass
         self.gen.stop()
-        self.scpWorkerStop(self.theWorkerBlocks)
 
         # stop save
         try:
@@ -1898,7 +1786,7 @@ class MyUi(Ui_MainWindow):
 ##############################################################################################
 
 def main():
-    from DAQ_Zynq_GUI.SW.Portal.app import jmp_backend
+    from DAQ_Zynq_GUI.SW.Portal.app import dac_jmp_backend
     from multiprocessing import freeze_support
     freeze_support()
 

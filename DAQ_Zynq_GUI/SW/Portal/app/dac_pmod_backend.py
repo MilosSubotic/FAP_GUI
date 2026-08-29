@@ -22,7 +22,6 @@ os.environ["PYTHON_JULIACALL_PROJECT"] = str(project_root) + "/DAQ_Zynq_GUI/SW/P
 from juliacall import Main as jl
 
 import numpy as np
-import matplotlib.pyplot as plt
 
 jl.include("dac_backend_portal.jl")
 
@@ -61,57 +60,6 @@ def waveform_to_dac(samples_v):
 def t_axis(n):
     return np.arange(n) / F_SMPL * 1e6  # us
 
-def plot_waveform(samples, title="DAC waveform"):
-
-    mv = dac_to_mv(samples)
-
-    t = t_axis(len(samples))
-
-    print(f"Min: {mv.min():.2f} mV")
-    print(f"Max: {mv.max():.2f} mV")
-
-    plt.figure(figsize=(12, 6))
-
-    plt.plot(
-        t,
-        mv,
-        marker='o',
-        markersize=3,
-        linewidth=1.5,
-        label="DAC output"
-    )
-
-    plt.axhline(
-        0,
-        linestyle='--',
-        linewidth=1,
-        label="0 mV"
-    )
-
-    plt.axhline(
-        VREF_MV / 2,
-        linestyle='--',
-        linewidth=1,
-        label="VREF/2"
-    )
-
-    plt.axhline(
-        VREF_MV,
-        linestyle='--',
-        linewidth=1,
-        label="VREF"
-    )
-
-    plt.title(title)
-    plt.xlabel("Time [us]")
-    plt.ylabel("Voltage [mV]")
-    plt.grid(True)
-    plt.legend(loc="upper right")
-    plt.tight_layout()
-    plt.show()
-
-
-#------------MAIN----------------
 
 if __name__ == "__main__":
     

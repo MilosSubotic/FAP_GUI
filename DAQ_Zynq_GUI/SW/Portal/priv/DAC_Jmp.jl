@@ -12,21 +12,23 @@ import dac_jmp_cfg
 #TODO Inherit interface
 struct DAC_Jmp
 	portal::Portal_Wormhole
+	gate::portal_gate_t
 end
 
 #TODO Make common. Instead of PG_ use function.
 function write(dac::DAC_Jmp, addr::UInt32, data::Array)
-	write(dac.portal, addr, data)
+	write(dac.portal, dac.gate, addr, data)
 end
 
 function read!(dac::DAC_Jmp, addr::UInt32, data::Array)
-	read!(dac.portal, addr, data)
+	read!(dac.portal, dac.gate, addr, data)
 end
 
 function write_word(dac::DAC_Jmp, addr_W, val)
 	data = UInt32[reinterpret(UInt32, val)]
 	write(
 		dac.portal,
+		dac.gate,
 		UInt32(addr_W*sizeof(UInt32)),
 		data
 	)
@@ -36,6 +38,7 @@ function read_word(dac::DAC_Jmp, addr_W, t::Type = UInt32)
 	data = zeros(UInt32, 1)
 	read!(
 		dac.portal,
+		dac.gate,
 		UInt32(addr_W*sizeof(UInt32)),
 		data
 	)

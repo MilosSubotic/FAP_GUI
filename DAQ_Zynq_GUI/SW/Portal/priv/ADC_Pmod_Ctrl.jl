@@ -3,8 +3,11 @@ export
 	ADC_PMOD_CTRL,
 	cnv_trig,
 	cnv_progress,
+	write_word,
+	read_word,
 	write_buf,
-	read_buf!
+	read_buf!,
+	poll
 
 
 push!(LOAD_PATH, joinpath(@__DIR__))
@@ -14,14 +17,15 @@ import adc_pmod_ctrl_cfg
 
 struct ADC_PMOD_CTRL
 	portal::Portal_Wormhole
+	gate::portal_gate_t
 end
 
 function write(adc::ADC_PMOD_CTRL, addr::UInt32, data::Array)
-	write(adc.portal, addr, data)
+	write(adc.portal, adc.gate, addr, data)
 end
 
 function read!(adc::ADC_PMOD_CTRL, addr::UInt32, data::Array)
-	read!(adc.portal, addr, data)
+	read!(adc.portal, adc.gate, addr, data)
 end
 
 
@@ -60,6 +64,7 @@ function write_word(adc::ADC_PMOD_CTRL, addr_W, val)
 	data = UInt32[reinterpret(UInt32, val)]
 	write(
 		adc.portal,
+		adc.gate,
 		UInt32(addr_W*sizeof(UInt32)),
 		data
 	)
@@ -69,6 +74,7 @@ function read_word(adc::ADC_PMOD_CTRL, addr_W, t::Type = UInt32)
 	data = zeros(UInt32, 1)
 	read!(
 		adc.portal,
+		adc.gate,
 		UInt32(addr_W*sizeof(UInt32)),
 		data
 	)
@@ -77,6 +83,6 @@ end
 
 function poll(adc::ADC_PMOD_CTRL)::Vector{UInt32}
     data = zeros(UInt32, 2)
-    read!(adc.portal, adc_pmod_ctrl_cfg.POLL_SMPLS_ADDR, data)
+    read!(adc.portal, adc.gate, adc_pmod_ctrl_cfg.POLL_SMPLS_ADDR, data)
     return data
 end

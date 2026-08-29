@@ -2,17 +2,16 @@
 
 mutable struct Portal_Wormhole
 	backend
-	gate
 end
 PORTAL_ADDR_BITS = 32 - ceil(Int, log2(length(instances(portal_gate_t))))
 
-function Portal_Wormhole(bt::portal_backend_t, gate::portal_gate_t )
+function Portal_Wormhole(bt::portal_backend_t)
 	if bt == BACKEND_USB
 		backend = USB()
 	elseif bt == BACKEND_LAN
 		throw(LoadError("Not implemented!"))
 	end
-	p = Portal_Wormhole(backend, gate)
+	p = Portal_Wormhole(backend)
 
 	if false
 		#FIXME
@@ -28,7 +27,19 @@ function Portal_Wormhole(bt::portal_backend_t, gate::portal_gate_t )
 	return p
 end
 
-function write(p::Portal_Wormhole, addr::UInt32, data::Array)
+#portal[] = Ref{Union{Portal_Wormhole, Nothing}}(nothing) 
+
+portal = Ref{Union{Portal_Wormhole, Nothing}}(nothing)  # <-- here: global variable to hold the Portal_Wormhole instance
+function get_portal()::Portal_Wormhole
+	if portal[] === nothing
+    	portal[] = Portal_Wormhole(BACKEND_USB)
+    end
+
+	return portal[]
+end
+
+
+function write(p::Portal_Wormhole, gate::portal_gate_t, addr::UInt32, data::Array)
 	@assert addr < 1<<PORTAL_ADDR_BITS
 
 	size = sizeof(data)
@@ -38,7 +49,7 @@ function write(p::Portal_Wormhole, addr::UInt32, data::Array)
 		chunk_size = chunk_end-chunk_beg+1
 		chunk_addr = addr + chunk_beg-1
 
-		header = UInt64(p.gate) << PORTAL_ADDR_BITS | UInt64(chunk_addr) | UInt64(chunk_size) << 32 | UInt64(1)<<63
+		header = UInt64(gate) << PORTAL_ADDR_BITS | UInt64(chunk_addr) | UInt64(chunk_size) << 32 | UInt64(1)<<63
 
 		header_p = convert(Ptr{UInt8}, pointer([header]))
 
@@ -55,7 +66,7 @@ function write(p::Portal_Wormhole, addr::UInt32, data::Array)
 end
 
 
-function read!(p::Portal_Wormhole, addr::UInt32, data::Array)
+function read!(p::Portal_Wormhole, gate::portal_gate_t, addr::UInt32, data::Array)
 	@assert addr < 1<<PORTAL_ADDR_BITS
 
 	size = sizeof(data)
@@ -68,7 +79,7 @@ function read!(p::Portal_Wormhole, addr::UInt32, data::Array)
 		chunk_beg_e = div(chunk_beg-1, sizeof(eltype(data)))+1
 		chunk_p = convert(Ptr{UInt8}, pointer(data, chunk_beg_e))
 
-		header = UInt64(p.gate) << PORTAL_ADDR_BITS | UInt64(chunk_addr) | UInt64(chunk_size) << 32 | UInt64(0)<<63
+		header = UInt64(gate) << PORTAL_ADDR_BITS | UInt64(chunk_addr) | UInt64(chunk_size) << 32 | UInt64(0)<<63
 
 		header_p = convert(Ptr{UInt8}, pointer([header]))
 		write(p.backend, sizeof(header), header_p)

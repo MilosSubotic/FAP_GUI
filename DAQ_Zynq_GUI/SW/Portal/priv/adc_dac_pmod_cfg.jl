@@ -4,8 +4,8 @@ module adc_dac_pmod_cfg
 	const VERSION_MAJOR = 1
 	# Change everytime HDL is changed
 	# To check in SW that system.bit is updated as should be.
-	const VERSION_MINOR = 1
-	const VERSION_DESCRIPTION = "Version with one dac_jmp and adc_lvds"
+	const VERSION_MINOR = 4
+	const VERSION_DESCRIPTION = "For older version"
 	# Use DAC_JMP instead one DAC_PMOD
 	const USE_DAC_JMP = 0x00000001
 	# Use ADC_LVDS instead one ADC_PMOD

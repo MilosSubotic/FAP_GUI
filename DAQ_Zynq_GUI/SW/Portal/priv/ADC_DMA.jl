@@ -14,14 +14,15 @@ import adc_lvds_cfg
 
 struct ADC_DMA
 	portal::Portal_Wormhole
+	gate::portal_gate_t
 end
 
 function write(adc::ADC_DMA, addr::UInt32, data::Array)
-	write(adc.portal, addr, data)
+	write(adc.portal, adc.gate, addr, data)
 end
 
 function read!(adc::ADC_DMA, addr::UInt32, data::Array)
-	read!(adc.portal, addr, data)
+	read!(adc.portal, adc.gate, addr, data)
 end
 
 
@@ -31,7 +32,7 @@ end
 
 function cnv_progress(adc::ADC_DMA)::Int
 	progress = Int32[-1]
-	read!(adc, adc_lvds_cfg.CNV_PROGRESS_ADDR, progress)
+	read!(adc,  adc_lvds_cfg.CNV_PROGRESS_ADDR, progress)
 	return progress[1]
 end
 
@@ -42,3 +43,4 @@ end
 function read_buf!(adc::ADC_DMA, samples::Vector{UInt32})
 	read!(adc, adc_lvds_cfg.BUF_ADDR, samples)
 end
+

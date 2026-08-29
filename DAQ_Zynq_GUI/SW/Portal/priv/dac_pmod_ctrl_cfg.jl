@@ -17,7 +17,8 @@ module dac_pmod_ctrl_cfg
 	const POLL_SMPL_ADDR = 0x00000008
 	const CPU_DONE_ADDR = 0x0000000c
 	const DMA_DONE_ADDR = 0x00000010
-	const STOP_ADDR = 0x00000014
+	const DMA_STARTED_ADDR = 0x00000014
+	const STOP_ADDR = 0x00000018
 	# 64MiB
 	const BUF_ADDR = 0x04000000
 	# 64MiB

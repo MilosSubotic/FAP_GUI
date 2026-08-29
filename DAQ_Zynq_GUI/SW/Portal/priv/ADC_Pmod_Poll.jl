@@ -11,20 +11,22 @@ import adc_poll_cfg
 
 struct ADC_Pmod_Poll
 	portal::Portal_Wormhole
+	gate::portal_gate_t
 end
 
 function write(adc::ADC_Pmod_Poll, addr::UInt32, data::Array)
-	write(adc.portal, addr, data)
+	write(adc.portal, adc.gate, addr, data)
 end
 
 function read!(adc::ADC_Pmod_Poll, addr::UInt32, data::Array)
-	read!(adc.portal, addr, data)
+	read!(adc.portal, adc.gate, addr, data)
 end
 
 function write_word(adc::ADC_Pmod_Poll, addr_W, val)
 	data = UInt32[reinterpret(UInt32, val)]
 	write(
 		adc.portal,
+		adc.gate,
 		UInt32(addr_W*sizeof(UInt32)),
 		data
 	)
@@ -34,6 +36,7 @@ function read_word(adc::ADC_Pmod_Poll, addr_W, t::Type = UInt32)
 	data = zeros(UInt32, 1)
 	read!(
 		adc.portal,
+		adc.gate,
 		UInt32(addr_W*sizeof(UInt32)),
 		data
 	)

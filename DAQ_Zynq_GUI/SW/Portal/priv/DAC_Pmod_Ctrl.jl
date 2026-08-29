@@ -15,14 +15,15 @@ import dac_pmod_ctrl_cfg
 
 struct DAC_PMOD_CTRL
 	portal::Portal_Wormhole
+	gate::portal_gate_t
 end
 
 function write(dac::DAC_PMOD_CTRL, addr::UInt32, data::Array)
-	write(dac.portal, addr, data)
+	write(dac.portal, dac.gate, addr, data)
 end
 
 function read!(dac::DAC_PMOD_CTRL, addr::UInt32, data::Array)
-	read!(dac.portal, addr, data)
+	read!(dac.portal, dac.gate, addr, data)
 end
 
 
@@ -52,6 +53,7 @@ function write_word(dac::DAC_PMOD_CTRL, addr_W, val)
 	data = UInt32[reinterpret(UInt32, val)]
 	write(
 		dac.portal,
+		dac.gate,
 		UInt32(addr_W*sizeof(UInt32)),
 		data
 	)
@@ -61,6 +63,7 @@ function read_word(dac::DAC_PMOD_CTRL, addr_W, t::Type = UInt32)
 	data = zeros(UInt32, 1)
 	read!(
 		dac.portal,
+		dac.gate,
 		UInt32(addr_W*sizeof(UInt32)),
 		data
 	)
@@ -69,6 +72,10 @@ end
 
 function poll_write(dac::DAC_PMOD_CTRL, samples::Vector{UInt32})
     write(dac, UInt32(dac_pmod_ctrl_cfg.POLL_SMPL_ADDR), samples)
+end
+
+function is_started(dac::DAC_PMOD_CTRL)
+	return read_word(dac, dac_pmod_ctrl_cfg.DMA_STARTED_ADDR) != 0
 end
 
 function cpu_write_done(dac::DAC_PMOD_CTRL)

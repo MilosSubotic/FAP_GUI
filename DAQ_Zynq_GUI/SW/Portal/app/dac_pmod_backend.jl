@@ -1,7 +1,3 @@
-include("../Portal_inc.jl")
-include(joinpath(@__DIR__, "..", "..", "..", "..", "globalUSBvariables.jl"))
-
-const GATE = PG_DAC_PMOD_0
 
 const VREF_MV = 2500.0
 const BITS = 16
@@ -31,15 +27,16 @@ function gen_sine(
     ]
 end
 
-function send_samples(samples::Vector{UInt32})
+function send_samples(samples::Vector{UInt32}, ch::Int)
 
-    if dac_pmod_portal[] === nothing
-        dac_pmod_portal[] = Portal_Wormhole(BACKEND_USB, GATE)
+    
+    if ch == 0
+        dac = DAC_PMOD_CTRL(get_portal(), PG_DAC_PMOD_0)
+    elseif ch == 1
+        dac = DAC_PMOD_CTRL(get_portal(), PG_DAC_PMOD_1)
+    else
+        error("Channel must be 0 or 1") 
     end
-
-    portal = dac_pmod_portal[]
-    dac = DAC_PMOD_CTRL(portal)
-
     try
 
         while dma_write_done(dac) != 1
@@ -62,7 +59,10 @@ function send_samples(samples::Vector{UInt32})
 
         end
 
-    finally
+    catch e
+        println("SEND_SAMPLES ERROR: $e")
+        close(get_portal())
+        rethrow()
     end
 
     return true
@@ -87,7 +87,7 @@ function play_sine(
 
     samples = gen_sine(n, periods, Vpp, Vcenter)
 
-    send_samples(samples)
+    send_samples(samples, 0)
 
     return samples
 end

@@ -25,7 +25,8 @@ const word_t = UInt64
 const addr_t = UInt32 # [W]
 
 mutable struct SV_CPU
-	portal::Portal_Worm
+	portal::Portal_Wormhole
+	gate::portal_gate_t
 	map::Dict{String, addr_t}
 	timeout_s
 	verbose
@@ -37,6 +38,7 @@ function write_word(cpu::SV_CPU, addr_W, val)
 	data = word_t[reinterpret(word_t, val)]
 	write(
 		cpu.portal,
+		cpu.gate,
 		UInt32(addr_W*sizeof(word_t)),
 		data
 	)
@@ -46,6 +48,7 @@ function read_word(cpu::SV_CPU, addr_W, t::Type = word_t)
 	data = zeros(word_t, 1)
 	read!(
 		cpu.portal,
+		cpu.gate,
 		UInt32(addr_W*sizeof(word_t)),
 		data
 	)
@@ -60,13 +63,15 @@ end_of_program(cpu::SV_CPU) = read_word(cpu, DM_end_of_program)
 
 
 function SV_CPU(
-	portal::Portal_Worm
+	portal::Portal_Wormhole
 	;
+	gate::portal_gate_t,
 	timeout_s = 1,
 	verbose = false,
 )
 	cpu = SV_CPU(
 		portal,
+		gate,
 		Dict{String, addr_t}(),
 		timeout_s,
 		verbose,

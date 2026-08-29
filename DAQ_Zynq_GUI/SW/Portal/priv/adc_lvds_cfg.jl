@@ -4,8 +4,8 @@ module adc_lvds_cfg
 	const VERSION_MAJOR = 1
 	# Change everytime HDL is changed
 	# To check in SW that system.bit is updated as should be.
-	const VERSION_MINOR = 2
-	const VERSION_DESCRIPTION = "Just 1 ch"
+	const VERSION_MINOR = 3
+	const VERSION_DESCRIPTION = "Added m_axis_tdest"
 	const F_AXI = 50000000
 	const F_ADC_SER = 200000000
 	const F_CNV = 5000000

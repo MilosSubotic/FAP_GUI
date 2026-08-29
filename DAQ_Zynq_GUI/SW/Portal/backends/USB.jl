@@ -69,7 +69,7 @@ function USB()
 		#FIXME
 		finalizer(
 			function(usb::USB)
-				println("finilizing USB...")
+				#println("finilizing USB...")
 				close(usb)
 			end,
 			usb
@@ -119,34 +119,25 @@ function read!(usb::USB, size, ptr::Ptr{UInt8})
 end
 
 function close(usb::USB)
+	# Guard against double-close
     if usb.handle == C_NULL
         return
     end
-
-    println("Closing USB...")
-    display(stacktrace())
+	#println("Closing USB...")
 
 	ccall(
-        (:libusb_release_interface, libusb),
-        Cint,
-        (Ptr{Cvoid}, Cint),
-        usb.handle,
-        USB_INTERFACE
-    )
-
-    ccall(
-        (:libusb_close, libusb),
-        Cvoid,
-        (Ptr{Cvoid},),
-        usb.handle
-    )
-    usb.handle = C_NULL
-
-    ccall(
-        (:libusb_exit, libusb),
-        Cvoid,
-        (Ptr{Cvoid},),
-        usb.ctx
-    )
-    usb.ctx = C_NULL
+		(:libusb_close, libusb),
+		Cvoid,
+		(Ptr{Cvoid},),
+		usb.handle
+	)
+	usb.handle = C_NULL
+	ccall(
+		(:libusb_exit, libusb),
+		Cvoid,
+		(Ptr{Cvoid},),
+		usb.ctx
+	)
+	usb.ctx = C_NULL
 end
+

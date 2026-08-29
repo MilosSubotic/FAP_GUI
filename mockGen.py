@@ -1,9 +1,8 @@
 #from DAQ_Zynq_GUI.SW.Portal.app import adc_pmod_plot as adc
-from DAQ_Zynq_GUI.SW.Portal.app import dac_pmod_plot as dac
+from DAQ_Zynq_GUI.SW.Portal.app import dac_jmp_backend as dac
 import array as array
 import numpy as np
 from juliacall import Main as jl
-import matplotlib.pyplot as plt
 
 class FakeGen:
     def __init__(self):

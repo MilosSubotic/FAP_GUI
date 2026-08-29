@@ -1,7 +1,12 @@
 from juliacall import Main as jl
+import shutil
 import os
 
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))
+
+from juliacall import Main as jl
+
+import numpy as np
 
 jl.include(os.path.join(THIS_DIR, "dac_jmp_backend.jl"))
 
