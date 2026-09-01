@@ -1,4 +1,8 @@
 [deps]
+ArgParse = "c7e460c6-2fb9-53a9-8c5b-16f535851c63"
 FFMPEG = "c87230d0-a227-11e9-1b43-d7ebe4e7570a"
 FFMPEG_jll = "b22a6f82-2f65-5046-a5b2-351ab43fb4e5"
+GLMakie = "e9467ef8-e4e7-5192-8a1a-b1aee30e663a"
+GR = "28b8d3ca-fb5f-59d9-8090-bfdbd6d07a71"
 Plots = "91a5bcdd-55d7-5caf-9e0b-520d859cae80"
+libusb_jll = "a877fdc9-fe69-5ed6-b93d-11ecd0dc2d49"

@@ -1,32 +1,15 @@
 import os
-import shutil
 from pathlib import Path
-
-def find_project_root(start: Path):
-    for parent in [start] + list(start.parents):
-        if (parent / ".git").exists():
-            return parent
-    raise RuntimeError("Project root not found")
-
-current = Path(__file__).resolve()
-project_root = find_project_root(current)
-
-julia_path = shutil.which("julia")
-if julia_path:
-    os.environ["PYTHON_JULIACALL_EXE"] = julia_path
-else:
-    raise FileNotFoundError("Could not find 'julia' in the system PATH.")
-
-os.environ["PYTHON_JULIACALL_PROJECT"] = str(project_root) + "/DAQ_Zynq_GUI/SW/Portal/app"
 
 from juliacall import Main as jl
 
 import numpy as np
+THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 
-jl.include("dac_backend_portal.jl")
+jl.include(os.path.join(THIS_DIR, "dac_pmod_backend.jl"))
 
 VREF_MV = 2500.0
-BITS = 16
+DAC_BITS = 16
 F_SMPL = 118000
 
 def generate_sine():
@@ -43,7 +26,10 @@ def generate_sine():
     return samples
 
 def dac_to_mv(samples):
-    return samples / ((1 << BITS) - 1) * VREF_MV
+    return samples / ((1 << DAC_BITS) - 1) * VREF_MV
+
+def send_samples(samples):
+    jl.send_samples(jl.Vector[jl.UInt32](samples.tolist()))
 
 def waveform_to_dac(samples_v):
     samples_v = np.asarray(samples_v, dtype=float)
@@ -52,20 +38,14 @@ def waveform_to_dac(samples_v):
     samples_v = samples_v + 1.25
 
     return np.clip(
-        samples_v / 2.5 * ((1 << 16) - 1),
+        samples_v / 2.5 * ((1 << DAC_BITS) - 1),
         0,
-        (1 << 16) - 1
+        (1 << DAC_BITS) - 1
     ).astype(np.uint32)
 
 def t_axis(n):
     return np.arange(n) / F_SMPL * 1e6  # us
 
 
-if __name__ == "__main__":
-    
 
-    samples = generate_sine()
 
-    plot_waveform( samples,  title="DAC PMOD — Sine")
-
-    jl.send_samples(jl.Vector[jl.UInt32](samples.tolist()))

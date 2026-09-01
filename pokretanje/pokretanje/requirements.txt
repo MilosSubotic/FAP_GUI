@@ -1,9 +1,0 @@
-PyQt5
-python-libtiepie
-pyqtgraph
-numpy
-scipy
-qdarkgraystyle
-simpleaudio
-pyserial
-matplotlib

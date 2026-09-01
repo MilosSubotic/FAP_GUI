@@ -22,10 +22,11 @@ echo "==> Instaliraju se Python paketi (pip)..."
 pip install --upgrade pip
 pip install -r requirements.txt
 
+
 echo ""
 echo "==> Gotovo! Sve je instalirano."
 echo "Da pokrenes aplikaciju:"
 echo "    source .venv/bin/activate"
-echo "    python3 app.py        
+echo "    python3 app.py "     
 
 

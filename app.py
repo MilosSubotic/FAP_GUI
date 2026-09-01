@@ -48,15 +48,6 @@ import collections
 from scipy.interpolate import CubicSpline
 import glob
 
-import class_MySerial as myserial
-from juliacall import Main as jl
-jl.include("DAQ_Zynq_GUI/SW/Portal/Portal.jl")
-jl.seval("using .Portal")   # juliacall has no jl.using — use seval for bare `using` statements
-
-from pathlib import Path
-
-import DAQ_Zynq_GUI.SW.Portal.app.dac_jmp_backend as jmp_backend
-
 from pathlib import Path
 
 def find_project_root(start: Path):
@@ -68,16 +59,44 @@ def find_project_root(start: Path):
 current = Path(__file__).resolve()
 project_root = find_project_root(current)          # ← define FIRST
 
-# THEN set the environment variables
-julia_path = shutil.which("julia")
-if julia_path:
-    os.environ["PYTHON_JULIACALL_EXE"] = julia_path
-else:
-    raise FileNotFoundError("Could not find 'julia' in the system PATH.")
+# IMPORTANT: Set Julia environment BEFORE importing juliacall
+from pathlib import Path
 
-os.environ["PYTHON_JULIACALL_PROJECT"] = str(project_root) + "/DAQ_Zynq_GUI/SW/Portal/app"
+def find_project_root(start: Path):
+    for parent in [start] + list(start.parents):
+        if (parent / ".git").exists():
+            return parent
+    raise RuntimeError("Project root not found")
+
+current = Path(__file__).resolve()
+project_root = find_project_root(current)
+
+julia_path = shutil.which("julia")
+if not julia_path:
+    raise FileNotFoundError("Could not find 'julia' in PATH.")
+
+julia_project_path = (
+    project_root / "DAQ_Zynq_GUI" / "SW" / "Portal" / "app"
+)
+
+os.environ["PYTHON_JULIACALL_EXE"] = julia_path
+os.environ["PYTHON_JULIACALL_PROJECT"] = str(julia_project_path)
+
+from juliacall import Main as jl
+
+# Activate the correct Julia environment.
+jl.seval(f'using Pkg; Pkg.activate(raw"{julia_project_path}")')
+
+# Only necessary after changing Project.toml/Manifest.toml.
+jl.seval("Pkg.instantiate()")
+
+portal_jl = project_root / "DAQ_Zynq_GUI" / "SW" / "Portal" / "Portal.jl"
+
+jl.include(str(portal_jl))
+jl.seval("using .Portal")
 
 from mockGen import mockGen
+import class_MySerial as myserial
 
 from multiprocessing import Event, Process, Queue
 
@@ -165,7 +184,7 @@ class MyUi(Ui_MainWindow):
 
         self.dialogs = list()
 
-        self.gen = mockGen()  # initialize generator with ADC_LVDS backend
+        self.gen = mockGen(dac_type="DAC_JMP")  # initialize generator with DAC_PMOD backend
         self.scp = mockScope(adc_type="ADC_LVDS", channel=1)
 
         self.threadpool = QThreadPool()
@@ -1337,6 +1356,7 @@ class MyUi(Ui_MainWindow):
 
         if self.gen.gen.output_enable:
             print("Stopping generator")
+
             self.gen.stop()
 
             if hasattr(self, "timerAcq"):
@@ -1347,13 +1367,15 @@ class MyUi(Ui_MainWindow):
 
         print("Starting generator")
 
-        import threading
-        print("MAIN THREAD =", threading.get_ident())
+        # Configure DAC_JMP + prepare waveform
+        self.arbSet()
 
-        # Za test NEMOJ slati generator
-        # self.arbSet()
+        # For DAC_JMP this simply marks it as running.
+        # For DAC_PMOD it sends the samples.
+        self.gen.start()
 
         print("Starting acquisition timer")
+
         self.timerAcq.start(50)
         self.acquisitionStarted = True
 
@@ -1371,9 +1393,9 @@ class MyUi(Ui_MainWindow):
                          )
         
         # OVDE IDE DAC_JMP CONFIG
-        """try:
+        try:
             print("NAMESTAMO JMP")
-            jmp_backend.set_cfg(
+            self.gen.set_cfg(
                 t_pump=float(self.doubleSpinBox_PumpTime_ms.value()) / 1000,
                 t_probe=(
                     float(self.doubleSpinBox_TotalTime_ms.value())
@@ -1387,7 +1409,7 @@ class MyUi(Ui_MainWindow):
 
         except Exception as e:
             print("DAC_JMP configuration failed:")
-            print(e)"""
+            print(e)
 
         arb = arbObj.arb()
         t, y = arb

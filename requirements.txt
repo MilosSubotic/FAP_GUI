@@ -6,3 +6,5 @@ scipy
 qdarkgraystyle
 simpleaudio
 pyserial
+matplotlib
+juliacall

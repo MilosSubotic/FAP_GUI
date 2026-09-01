@@ -1,114 +1,110 @@
-#from DAQ_Zynq_GUI.SW.Portal.app import adc_pmod_plot as adc
-from DAQ_Zynq_GUI.SW.Portal.app import dac_jmp_backend as dac
+from DAQ_Zynq_GUI.SW.Portal.app import dac_jmp_backend as dac_jmp
+from DAQ_Zynq_GUI.SW.Portal.app import dac_pmod_backend as dac_pmod
 import array as array
 import numpy as np
-from juliacall import Main as jl
+
+dac_type = ["DAC_JMP", "DAC_PMOD"]
+
+DAC_SAMPLE_RATE = 268800.0   # Hz, pravi DAC PMOD rate
 
 class FakeGen:
-    def __init__(self):
+    def __init__(self, dac_type="DAC_JMP"):
         self.output_enable = False
+        self.dac_type = dac_type
+        if self.dac_type == "DAC_JMP":
+            self.gen = dac_jmp
+        elif self.dac_type == "DAC_PMOD":
+            self.gen = dac_pmod  # Placeholder for DAC_PMOD backend
 
 
 class mockGen:
-    def __init__(self):
-        self.gen = FakeGen()
+    def __init__(self, dac_type="DAC_JMP"):
+        self.gen = FakeGen(dac_type=dac_type)
         self.data = None
 
         print("Generator povezan")
 
+    def set_cfg(
+            self,
+            t_pump,
+            t_probe,
+            f_2larmor,
+            V_pump1,
+            V_pump2,
+            V_probe):
+        self.gen.set_cfg(
+            t_pump,
+            t_probe,
+            f_2larmor,
+            V_pump1,
+            V_pump2,
+            V_probe
+        )
+    
     def arbLoad(self, arb):
         print("ARB MIN =", np.min(arb))
         print("ARB MAX =", np.max(arb))
         print("ARB LEN =", len(arb))
-        print("ARB FIRST 50 =")
-        print(arb[:50])
-        
 
-        # Sacuvaj originalni ArbCalc signal
         self.original_arb = np.array(arb, dtype=float)
-        np.savetxt(
-            "/tmp/arbcalc_signal.txt",
-            arb,
-            fmt="%.10f"
-        )
 
-        print("Saved ArbCalc signal -> /tmp/arbcalc_signal.txt")
+        if self.gen.dac_type == "DAC_JMP":
+            print("DAC_JMP: waveform generated in hardware")
+            self.data = None
+            return True
 
-        """plt.figure()
-        plt.plot(arb)
-        plt.title("arbcalc output")
-        plt.show()"""
+        if self.gen.dac_type == "DAC_PMOD":
+            try:
+                self.data = self.gen.waveform_to_dac(arb)
 
-        if self.gen is False:
-            return False
-        if len(arb) == 0:
-            print("Empty waveform!")
-            return False
+                print("DAC UNIQUE =", len(np.unique(self.data)))
+                print("DAC MIN =", np.min(self.data))
+                print("DAC MAX =", np.max(self.data))
 
-        try:
-            self.data = dac.waveform_to_dac(arb)
+                self.dac_to_mv()
 
-            print("DAC UNIQUE =", len(np.unique(self.data)))
-            print("DAC MIN =", np.min(self.data))
-            print("DAC MAX =", np.max(self.data))
+                return True
 
-            # Sacuvaj DAC kodove
-            np.savetxt(
-                "/tmp/dac_samples.txt",
-                self.data,
-                fmt="%u"
-            )
+            except Exception as e:
+                print("DAC_PMOD error:", e)
+                return False
 
-            print("Saved DAC samples -> /tmp/dac_samples.txt")
-
-            print(f"Mock: Loaded {len(self.data)} samples")
-
-            self.dac_to_mv()
-
-        except Exception as e:
-            print("Mock error:", e)
-            return False
-
-        return True
+        return False
     
     def plot(self):
-        dac.plot_waveform(self.data)
+        self.gen.plot_waveform(self.data)
 
     def dac_to_mv(self):
-        self.generated_signal = dac.dac_to_mv(self.data)
+        self.generated_signal = self.gen.dac_to_mv(self.data)
     
     def start(self):
-
-        if self.data is None:
-            return
-
         try:
-            print("before send")
+            if self.gen.dac_type == "DAC_JMP":
+                # DAC_JMP is already configured through set_cfg().
+                # No waveform samples need to be sent.
+                print("DAC_JMP: hardware waveform started/configured")
+                self.gen.output_enable = True
+                return
 
-            print("samples len =", len(self.data))
-            print("samples min =", np.min(self.data))
-            print("samples max =", np.max(self.data))
+            if self.gen.dac_type == "DAC_PMOD":
+                if self.data is None:
+                    print("DAC_PMOD: no waveform loaded")
+                    return
 
-            print("creating julia vector")
+                print("before send")
+                print("samples len =", len(self.data))
+                print("samples min =", np.min(self.data))
+                print("samples max =", np.max(self.data))
 
-            vec = jl.Vector[jl.UInt32](self.data.tolist())
+                self.gen.send_samples(self.data)
 
-            print("vector created")
-
-            jl.send_samples(vec)
-
-            print("send returned")
-
-            print("SEND OK")
+                print("SEND OK")
+                self.gen.output_enable = True
 
         except Exception as e:
             print("SEND FAILED")
             print(e)
             raise
-
-        self.gen.output_enable = True
-
-    print("Waveform sent")
 
     def stop(self):
         self.gen.output_enable = False
