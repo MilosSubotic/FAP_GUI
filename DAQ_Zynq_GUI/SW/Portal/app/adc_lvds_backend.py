@@ -17,14 +17,14 @@ def capture(ch: int, n: int):
     import numpy as np
     return np.array(samples, dtype=np.float64) 
 
-#def start(ch: int = 1):
-#    jl.start(ch)
+def start(ch: int = 1):
+    jl.start(ch)
 
-#def stop(ch: int = 1):
-#    jl.stop(ch)
+def stop(ch: int = 1):
+    jl.stop(ch)
 
-#def is_running(ch: int = 1) -> bool:
-#    return jl.is_running(ch)
+def is_running(ch: int = 1) -> bool:
+   return jl.is_running(ch)
 
 def t_axis(f_smpl: float, record_length: int):
     import numpy as np

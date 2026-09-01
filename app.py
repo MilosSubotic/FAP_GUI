@@ -8,10 +8,8 @@
 # C:\Users\Zoran\Anaconda3\Library\bin
 # C:\Users\Zoran\Anaconda3\Library\bin\pyuic5 gui.ui -o gui.py
 
-import multiprocessing
 import shutil
 import os
-multiprocessing.set_start_method("spawn", force=True)
 from queue import Empty
 
 # pip install qdarkgraystyle
@@ -98,36 +96,6 @@ jl.seval("using .Portal")
 from mockGen import mockGen
 import class_MySerial as myserial
 
-from multiprocessing import Event, Process, Queue
-
-def adc_process(queue, stop_event, n_samples):
-    print("ADC PROCESS STARTED")
-
-    from DAQ_Zynq_GUI.SW.Portal.app import adc_pmod_plot as adc
-    import numpy as np
-
-    while not stop_event.is_set():
-
-        print("before capture")
-
-        raw = adc.capture(1, n_samples)
-
-        if stop_event.is_set():
-            break
-
-        print("after capture")
-
-        ch1 = np.asarray(adc.adc_to_mv(raw)).copy()
-
-        if stop_event.is_set():
-            break
-
-        queue.put([ch1, np.zeros_like(ch1)])
-
-    print("ADC PROCESS EXIT")
-
-import threading
-
 from mockScp import mockScope  # malo lepse koriscenje oopa
 # extend Ui_MainWindow class
 class MyUi(Ui_MainWindow):
@@ -176,7 +144,6 @@ class MyUi(Ui_MainWindow):
     VCSELLSpectrumLoaded = [False, False]
 
 
-
     """Initialize the app"""
 
     def __init__(self):
@@ -186,6 +153,8 @@ class MyUi(Ui_MainWindow):
 
         self.gen = mockGen(dac_type="DAC_JMP")  # initialize generator with DAC_PMOD backend
         self.scp = mockScope(adc_type="ADC_LVDS", channel=1)
+
+        #self.device_owner = None
 
         self.threadpool = QThreadPool()
         self.theWorkerSave = Worker(self.SaveData)  # Any other args, kwargs are passed to the run function
@@ -208,50 +177,9 @@ class MyUi(Ui_MainWindow):
         self.esp32 = myserial.MySerial()
         #self.esp32.connect()
 
-
-        self.adc_queue = Queue()
-
-        print("QUEUE MAIN =", id(self.adc_queue))
-
-        self.stop_event = Event()
-        self.adc_proc = Process(
-            target=adc_process,
-            args=(self.adc_queue, self.stop_event, 32768)
-        )
-
-        print("NOT STARTING ADC PROCESS")
-        #self.adc_proc.start()
-
         import time
 
         time.sleep(0.5)
-
-        print("ADC alive:", self.adc_proc.is_alive())
-        print("ADC exitcode:", self.adc_proc.exitcode)
-
-        self.timerADC = QtCore.QTimer()
-        self.timerADC.timeout.connect(self.updateADC)
-        self.timerADC.start(50)
-
-        print("MAIN PID =", os.getpid())
-        print("MAIN THREAD =", threading.get_ident())
-
-
-    def updateADC(self):
-        #print("updateADC called")
-
-        while not self.adc_queue.empty():
-            print("GOT DATA")
-            self.SCPData = self.adc_queue.get()
-
-            # FIT uvek vidi poslednje podatke
-            self.dataSCPtoFITtab = self.SCPData
-
-            # Ako je FIT tab otvoren, odmah ga osveži
-            if self.tabWidget.currentIndex() == 1:
-                self.fit()
-
-            self.plotSCP()
 
     """
     override function of the parent class to connect actions and buttons
@@ -1809,8 +1737,6 @@ class MyUi(Ui_MainWindow):
 
 def main():
     from DAQ_Zynq_GUI.SW.Portal.app import dac_jmp_backend
-    from multiprocessing import freeze_support
-    freeze_support()
 
     app = QtWidgets.QApplication(sys.argv)
     app.setStyleSheet(qdarkgraystyle.load_stylesheet())

@@ -1,10 +1,11 @@
-
 export 
 	ADC_DMA,
 	cnv_trig,
 	cnv_progress,
 	write_buf,
-	read_buf!
+	read_buf!,
+	write_word,
+	read_word
 
 
 push!(LOAD_PATH, joinpath(@__DIR__))
@@ -44,3 +45,23 @@ function read_buf!(adc::ADC_DMA, samples::Vector{UInt32})
 	read!(adc, adc_lvds_cfg.BUF_ADDR, samples)
 end
 
+function write_word(adc::ADC_DMA, addr_W, val)
+	data = UInt32[UInt32(val)]
+	write(
+		adc.portal,
+		adc.gate,
+		UInt32(addr_W*sizeof(UInt32)),
+		data
+	)
+end
+
+function read_word(adc::ADC_DMA, addr_W, t::Type = UInt32)
+	data = zeros(UInt32, 1)
+	read!(
+		adc.portal,
+		adc.gate,
+		UInt32(addr_W*sizeof(UInt32)),
+		data
+	)
+	return convert(t, data[1])
+end

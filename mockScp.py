@@ -43,12 +43,11 @@ class MockDevice:
             self.sample_rate = self.config.sample_rate
         self.measure_mode = self.config.measure_mode
 
-    @property
-    #def start(self):
-        #self.scp.start(self.channel, self.record_length)
+    def start(self):
+        self.scp.start(self.channel)
 
-    #def stop(self):
-    #    self.scp.stop(self.channel)
+    def stop(self):
+        self.scp.stop(self.channel)
     
     def is_running(self):
         time.sleep(0.02)
@@ -73,7 +72,6 @@ class mockScope(Scope):  # ili MockScope ako pratiš abstrakciju
             config=config or AcqConfig()
         )
             
-        self
         self.status_settings_changed = False
         self.channels = 2
         self.srs = {  # list of available sample rates @ 18 bit resolution
@@ -83,6 +81,13 @@ class mockScope(Scope):  # ili MockScope ako pratiš abstrakciju
             "625 k": 625000
         }
         self.trigger_name = "Generator"
+
+    def start(self):
+        self.scp.start()
+
+    def stop(self):
+        self.scp.stop()
+        
 
     def set(self,
             mode="block",

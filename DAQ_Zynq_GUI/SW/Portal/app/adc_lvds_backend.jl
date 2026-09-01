@@ -54,20 +54,20 @@ end
 function start(ch::Int = 1)
 
     adc = ADC_DMA(get_portal(), PG_ADC_DMA)
-	#write(adc, adc_lvds_cfg.RM_en, 1)
+	write_word(adc, adc_lvds_cfg.RM_en, 1)
 end
 
 function stop(ch::Int = 1)
 
 	adc = ADC_DMA(get_portal(), PG_ADC_DMA)
-	#write(adc, adc_lvds_cfg.RM_en, 0)
+	write_word(adc, adc_lvds_cfg.RM_en, 0)
 end
 
 function is_running(ch::Int = 1)::Bool
 
     adc = ADC_DMA(get_portal(), PG_ADC_DMA)
 	val = zeros(UInt32, 1)
-	#read!(adc, adc_lvds_cfg.RM_en, val)
+	read_word(adc, adc_lvds_cfg.RM_en, val)
     return val[1] != 0
 end
 

@@ -1,13 +1,13 @@
 #!/usr/bin/env julia
 
 
-const VREF_MV = 3300.0
-const BITS = 12
+const ADC_PMOD_VREF_MV = 3300.0
+const ADC_PMOD_BITS = 12
 const F_SMPL = 118000
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
-adc_to_mv(sample::Integer) = sample * VREF_MV / ((1 << BITS) - 1)
+adc_to_mv(sample::Integer) = sample * ADC_PMOD_VREF_MV / ((1 << ADC_PMOD_BITS) - 1)
 t_axis(n) = collect(0:n-1) ./ F_SMPL .* 1000  # ms
 
 include(joinpath(@__DIR__, "..", "priv", "adc_pmod_ctrl_cfg.jl"))
