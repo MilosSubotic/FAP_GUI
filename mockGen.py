@@ -7,7 +7,7 @@ dac_type = ["DAC_JMP", "DAC_PMOD"]
 
 DAC_SAMPLE_RATE = 268800.0   # Hz, pravi DAC PMOD rate
 
-class FakeGen:
+class mockGen:
     def __init__(self, dac_type="DAC_JMP"):
         self.output_enable = False
         self.dac_type = dac_type
@@ -15,11 +15,6 @@ class FakeGen:
             self.gen = dac_jmp
         elif self.dac_type == "DAC_PMOD":
             self.gen = dac_pmod  # Placeholder for DAC_PMOD backend
-
-
-class mockGen:
-    def __init__(self, dac_type="DAC_JMP"):
-        self.gen = FakeGen(dac_type=dac_type)
         self.data = None
 
         print("Generator povezan")
@@ -48,12 +43,12 @@ class mockGen:
 
         self.original_arb = np.array(arb, dtype=float)
 
-        if self.gen.dac_type == "DAC_JMP":
+        if self.dac_type == "DAC_JMP":
             print("DAC_JMP: waveform generated in hardware")
             self.data = None
             return True
 
-        if self.gen.dac_type == "DAC_PMOD":
+        if self.dac_type == "DAC_PMOD":
             try:
                 self.data = self.gen.waveform_to_dac(arb)
 
@@ -79,14 +74,14 @@ class mockGen:
     
     def start(self):
         try:
-            if self.gen.dac_type == "DAC_JMP":
+            if self.dac_type == "DAC_JMP":
                 # DAC_JMP is already configured through set_cfg().
                 # No waveform samples need to be sent.
                 print("DAC_JMP: hardware waveform started/configured")
-                self.gen.output_enable = True
+                self.output_enable = True
                 return
 
-            if self.gen.dac_type == "DAC_PMOD":
+            if self.dac_type == "DAC_PMOD":
                 if self.data is None:
                     print("DAC_PMOD: no waveform loaded")
                     return
@@ -99,7 +94,7 @@ class mockGen:
                 self.gen.send_samples(self.data)
 
                 print("SEND OK")
-                self.gen.output_enable = True
+                self.output_enable = True
 
         except Exception as e:
             print("SEND FAILED")
@@ -107,5 +102,5 @@ class mockGen:
             raise
 
     def stop(self):
-        self.gen.output_enable = False
+        self.output_enable = False
         print("Mock: stopped")

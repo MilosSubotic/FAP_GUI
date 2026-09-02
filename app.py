@@ -1282,28 +1282,18 @@ class MyUi(Ui_MainWindow):
             print("Nema generatora!")
             return
 
-        if self.gen.gen.output_enable:
+        if self.gen.output_enable:
             print("Stopping generator")
-
             self.gen.stop()
-
             if hasattr(self, "timerAcq"):
                 self.timerAcq.stop()
-
             self.acquisitionStarted = False
             return
 
         print("Starting generator")
-
-        # Configure DAC_JMP + prepare waveform
         self.arbSet()
-
-        # For DAC_JMP this simply marks it as running.
-        # For DAC_PMOD it sends the samples.
         self.gen.start()
-
         print("Starting acquisition timer")
-
         self.timerAcq.start(50)
         self.acquisitionStarted = True
 
