@@ -29,13 +29,21 @@ function set_cfg_py(
     println("SET_CFG_PY EXIT")
 end
 
-function probe_py()
+function mon_probe_py()
 
     dac = DAC_Jmp(get_portal(), PG_DAC_JMP)
 
     try
-        return probe(dac)
+        while probe(dac);  sleep(0.0005); end   # wait FE
+        while !probe(dac); sleep(0.0005); end   # wait RE
+        t_probe_start = time()
+        while probe(dac);  sleep(0.0005); end   # wait FE
+        t_probe_end = time()
+
+		t_probe_ms = (t_probe_end - t_probe_start)*1e3
+
+		println("T_PROBE_MS = $t_probe_ms")
     catch e
-        println("PROBE_PY ERROR: $e")
+        println("MON_PROBE_PY ERROR: $e")
     end
 end

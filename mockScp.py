@@ -9,6 +9,7 @@ import numpy as np
 import time
 
 ADC_SAMPLE_RATE = 118000   # Hz, pravi ADC PMOD rate
+ADC_LVDS_SAMPLE_RATE = 5_000_000  # Hz, pravi ADC LVDS rate
 
 from dataclasses import dataclass, field
 
@@ -40,7 +41,7 @@ class MockDevice:
         if self.adc_type == "ADC_PMOD":
             self.sample_rate = ADC_SAMPLE_RATE
         else:
-            self.sample_rate = self.config.sample_rate
+            self.sample_rate = ADC_LVDS_SAMPLE_RATE
         self.measure_mode = self.config.measure_mode
 
     def start(self):
@@ -57,8 +58,17 @@ class MockDevice:
     def get_data(self):
         raw = self.scp.capture(self.channel, self.record_length)
         ch1 = np.asarray(raw, dtype=np.float64)
-        print(f"[MOCK] get_data: ch1 len={len(ch1)}, min={np.min(ch1)}, max={np.max(ch1)}")
-        ch2 = np.zeros_like(ch1)   # single real channel; pad to match 2-channel shape
+
+        print(
+            f"[MOCK] LVDS: "
+            f"len={len(ch1)}, "
+            f"sample_rate={self.sample_rate}, "
+            f"duration={len(ch1)/self.sample_rate*1000:.3f} ms, "
+            f"min={np.min(ch1)}, "
+            f"max={np.max(ch1)}"
+        )
+
+        ch2 = np.zeros_like(ch1)
         return [ch1, ch2]
 
 class mockScope(Scope):  # ili MockScope ako pratiš abstrakciju
@@ -92,7 +102,7 @@ class mockScope(Scope):  # ili MockScope ako pratiš abstrakciju
     def set(self,
             mode="block",
             sample_rate=1e6,
-            record_length=1e3,
+            record_length=256e3,
             CH_ranges=None,
             CH_couplings=None,
             trigger_source="Generator"):

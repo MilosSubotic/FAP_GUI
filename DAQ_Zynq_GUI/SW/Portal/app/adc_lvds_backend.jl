@@ -14,12 +14,12 @@ plot_between = 1:round(Int, 1 * N_smpls)  # show
 
 include(joinpath(@__DIR__, "..", "priv", "adc_lvds_cfg.jl"))
     
-function capture(n::Int)
-	raw_samples = zeros(UInt32, n)
+function capture(ch::Int, samples_length::Int)
+	raw_samples = zeros(UInt32, samples_length)
 
     adc = ADC_DMA(get_portal(), PG_ADC_DMA)
     try
-		cnv_trig(adc, n)
+		cnv_trig(adc, samples_length)
 
 		while true
 			sleep(0.1)
@@ -40,15 +40,15 @@ function capture(n::Int)
 
 	BITS = 18
 
-    unscaled = zeros(Int32, n)
+    unscaled = zeros(Int32, samples_length)
     unscaled = Int32[
 	reinterpret(Int32, ts << (32-BITS)) >> (32-BITS) for ts in raw_samples
 	]
-	samples = zeros(UInt32, n)
+	samples = zeros(UInt32, samples_length)
     scale = 15/(1 << BITS)
     samples = unscaled.*scale
 
-    return samples         # <-- here: returned on success
+    return samples        # <-- here: returned on success
 end
 
 function start(ch::Int = 1)
@@ -71,9 +71,9 @@ function is_running(ch::Int = 1)::Bool
     return val[1] != 0
 end
 
-function t_axis(f_smpl::Float64, record_length::Int)
+function t_axis(f_smpl::Float64, samples_length::Int)
 	T = 1/f_smpl
-	t = collect(0:record_length-1) .* T
+	t = collect(0:samples_length-1) .* T
 	return t
 end
 

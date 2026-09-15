@@ -19,6 +19,26 @@ ENDPOINT_TX = LIBUSB_ENDPOINT_OUT | USB_ENDPOINT
 # device-to-host.
 ENDPOINT_RX = LIBUSB_ENDPOINT_IN | USB_ENDPOINT
 
+const LIBUSB_ERROR_NAMES = Dict(
+    0   => "LIBUSB_SUCCESS",
+    -1  => "LIBUSB_ERROR_IO (input/output error)",
+    -2  => "LIBUSB_ERROR_INVALID_PARAM (invalid parameter)",
+    -3  => "LIBUSB_ERROR_ACCESS (access denied, insufficient permissions)",
+    -4  => "LIBUSB_ERROR_NO_DEVICE (device not found / has been disconnected)",
+    -5  => "LIBUSB_ERROR_NOT_FOUND (entity not found)",
+    -6  => "LIBUSB_ERROR_BUSY (resource busy)",
+    -7  => "LIBUSB_ERROR_TIMEOUT (transfer timed out)",
+    -8  => "LIBUSB_ERROR_OVERFLOW (overflow)",
+    -9  => "LIBUSB_ERROR_PIPE (pipe error / endpoint stalled)",
+    -10 => "LIBUSB_ERROR_INTERRUPTED (system call interrupted)",
+    -11 => "LIBUSB_ERROR_NO_MEM (insufficient memory)",
+    -12 => "LIBUSB_ERROR_NOT_SUPPORTED (operation not supported on this platform)",
+    -99 => "LIBUSB_ERROR_OTHER (unknown/other error)",
+)
+
+libusb_error_string(code::Integer) =
+    get(LIBUSB_ERROR_NAMES, code, "LIBUSB_ERROR_UNKNOWN (unrecognized code $code)")
+
 mutable struct USB
 	ctx::Ptr{Cvoid}
 	handle::Ptr{Cvoid}
@@ -89,18 +109,13 @@ function _bulk_transfer(usb, size, ptr, enpoint_tx_rx)
 		(Ptr{Cvoid}, Cuchar, Ptr{Cuchar}, Cint, Ptr{Cint}, Cuint),
 		usb.handle,
 		enpoint_tx_rx,
-		ptr, # data
-		UInt32(size), # length
+		ptr,
+		UInt32(size),
 		transfered,
 		USB_TIMEOUT
 	)
 	if r != 0
-		if r == LIBUSB_ERROR_TIMEOUT
-			r2 = "Timeout"
-		else
-			r2 = ""
-		end
-		throw("libusb_bulk_transfer(): failed with $(r) $(r2)!")
+		throw("libusb_bulk_transfer(): failed with $(r) ($(libusb_error_string(r)))!")
 	else
 		if transfered[1] != size
 			#throw("libusb_bulk_transfer(): Not all transfered!")

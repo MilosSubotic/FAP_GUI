@@ -8,15 +8,13 @@ from pathlib import Path
 from juliacall import Main as jl
 
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))
-jl.include(os.path.join(THIS_DIR, "adc_pmod_backend.jl"))   # renamed from adc_backend_portal.jl
+jl.include(os.path.join(THIS_DIR, "adc_pmod_backend.jl"))  
 
-VREF = 3.3
-BITS = 12
-F_SMPL = 118000          # the ONE real, fixed rate for this hardware — not user-selectable
+F_SMPL = 118000          
 
-def capture(ch: int, n: int):
+def capture(ch: int, samples_length: int):
     """Blocking. Must be called on the Qt main thread only."""
-    samples = jl.capture(ch, n)
+    samples = jl.capture(ch, samples_length)
     import numpy as np
     return np.array(samples, dtype=np.uint32)
 

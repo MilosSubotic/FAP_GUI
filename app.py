@@ -176,6 +176,8 @@ class MyUi(Ui_MainWindow):
 
         self.esp32 = myserial.MySerial()
         #self.esp32.connect()
+        self.FITlastFFT = None
+        self.lastFIT = None
 
         import time
 
@@ -500,6 +502,7 @@ class MyUi(Ui_MainWindow):
     # not in use?
     def getOscData(self):
         self.scpSet()
+        self.gen.gen.mon_probe()
         self.SCPData = self.scp.getBlock()
 
         print("Current tab index: " + str(self.tabWidget.currentIndex()))
@@ -1201,6 +1204,8 @@ class MyUi(Ui_MainWindow):
         self.MAX11300out(self.doubleSpinBox_stabVCSELLOut.value(), ch=1)
 
     def updateCR(self):
+        if self.FITlastFFT is None or self.lastFIT is None:
+            return
         start, stop = self.FFTFilteredDataPlotFIT_lr.getRegion()
         self.FFTdataPlotFIT_lr.setRegion([start, stop])
         print(start, stop)
@@ -1719,6 +1724,12 @@ class MyUi(Ui_MainWindow):
     def trigger_changed(self):
         self.scpSet()
 
+def excepthook(exc_type, exc_value, exc_tb):
+    import traceback
+    traceback.print_exception(exc_type, exc_value, exc_tb)
+    # deliberately NOT calling sys.exit()/abort — just log and keep the GUI alive
+
+
 ##############################################################################################
 #
 #                    Start the app
@@ -1727,6 +1738,7 @@ class MyUi(Ui_MainWindow):
 
 def main():
     from DAQ_Zynq_GUI.SW.Portal.app import dac_jmp_backend
+    sys.excepthook = excepthook
 
     app = QtWidgets.QApplication(sys.argv)
     app.setStyleSheet(qdarkgraystyle.load_stylesheet())

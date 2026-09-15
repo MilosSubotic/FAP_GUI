@@ -36,5 +36,5 @@ def set_cfg(
     )
 
 
-def probe():
-    return bool(jl.probe_py())
+def mon_probe():
+    return bool(jl.mon_probe_py())

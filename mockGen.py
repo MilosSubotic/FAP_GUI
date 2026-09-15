@@ -27,6 +27,7 @@ class mockGen:
             V_pump1,
             V_pump2,
             V_probe):
+        self.gen.mon_probe()
         self.gen.set_cfg(
             t_pump,
             t_probe,
@@ -35,6 +36,7 @@ class mockGen:
             V_pump2,
             V_probe
         )
+        self.gen.mon_probe()
     
     def arbLoad(self, arb):
         print("ARB MIN =", np.min(arb))

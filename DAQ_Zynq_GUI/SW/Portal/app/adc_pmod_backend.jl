@@ -12,7 +12,7 @@ t_axis(n) = collect(0:n-1) ./ F_SMPL .* 1000  # ms
 
 include(joinpath(@__DIR__, "..", "priv", "adc_pmod_ctrl_cfg.jl"))
     
-function capture(ch::Int, n::Int)
+function capture(ch::Int, samples_length::Int)
 
     if ch == 0
         adc = ADC_PMOD_CTRL(get_portal(), PG_ADC_PMOD_0)
@@ -22,9 +22,9 @@ function capture(ch::Int, n::Int)
         error("Channel must be 0 or 1") 
     end
     
-    samples = zeros(UInt32, n)
+    samples = zeros(UInt32, samples_length)
     try
-        cnv_trig(adc, ch, n)
+        cnv_trig(adc, ch, samples_length)
         while true
             sleep(0.1)
             progress = cnv_progress(adc)
@@ -63,7 +63,8 @@ function start(ch::Int)
         error("Channel must be 0 or 1")
     end
 
-    println("Dummy function, already started in capture()")
+    write_word(adc, adc_pmod_ctrl_cfg.RM_ch_enable, 1 << ch)
+
 end
 
 function stop(ch::Int)
@@ -79,3 +80,5 @@ function stop(ch::Int)
     write_word(adc, adc_pmod_ctrl_cfg.RM_ch_enable, 0)
     
 end
+
+
