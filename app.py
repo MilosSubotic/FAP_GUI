@@ -93,7 +93,7 @@ portal_jl = project_root / "DAQ_Zynq_GUI" / "SW" / "Portal" / "Portal.jl"
 jl.include(str(portal_jl))
 jl.seval("using .Portal")
 
-from mockGen import mockGen
+from JuliaGen import JuliaGen
 import class_MySerial as myserial
 
 from mockScp import mockScope  # malo lepse koriscenje oopa
@@ -151,7 +151,7 @@ class MyUi(Ui_MainWindow):
 
         self.dialogs = list()
 
-        self.gen = mockGen(dac_type="DAC_JMP")  # initialize generator with DAC_PMOD backend
+        self.gen = JuliaGen(dac_type="DAC_JMP")  # initialize generator with DAC_PMOD backend
         self.scp = mockScope(adc_type="ADC_LVDS", channel=1)
 
         #self.device_owner = None
@@ -883,7 +883,7 @@ class MyUi(Ui_MainWindow):
             return "stream"
 
     def getSampleRate(self):
-        return self.scp.srs.get(self.comboBox_SampleRate.currentText(), 3125000)  
+        return self.scp.srs.get(self.comboBox_SampleRate.currentText(), 2500000)  
 
     def res(self, res):
         pass
@@ -1316,23 +1316,19 @@ class MyUi(Ui_MainWindow):
                          )
         
         # OVDE IDE DAC_JMP CONFIG
-        try:
-            print("NAMESTAMO JMP")
-            self.gen.set_cfg(
-                t_pump=float(self.doubleSpinBox_PumpTime_ms.value()) / 1000,
-                t_probe=(
-                    float(self.doubleSpinBox_TotalTime_ms.value())
-                    - float(self.doubleSpinBox_PumpTime_ms.value())
-                ) / 1000,
-                f_2larmor=float(self.doubleSpinBox_Frequency_Hz.value()),
-                V_pump1=float(self.doubleSpinBox_PumpLevel.value()),
-                V_pump2=float(self.doubleSpinBox_ZeroLevel.value()),
-                V_probe=float(self.doubleSpinBox_ProbeLevel.value())
-            )
 
-        except Exception as e:
-            print("DAC_JMP configuration failed:")
-            print(e)
+        print("Setting DAC_JMP configuration...")
+        self.gen.set_cfg(
+            t_pump=float(self.doubleSpinBox_PumpTime_ms.value()) / 1000,
+            t_probe=(
+                float(self.doubleSpinBox_TotalTime_ms.value())
+                - float(self.doubleSpinBox_PumpTime_ms.value())
+            ) / 1000,
+            f_2larmor=float(self.doubleSpinBox_Frequency_Hz.value()),
+            V_pump1=float(self.doubleSpinBox_PumpLevel.value()),
+            V_pump2=float(self.doubleSpinBox_ZeroLevel.value()),
+            V_probe=float(self.doubleSpinBox_ProbeLevel.value())
+        )
 
         arb = arbObj.arb()
         t, y = arb
@@ -1347,9 +1343,6 @@ class MyUi(Ui_MainWindow):
         return
 
     def plotArbGenerated(self):
-        if not hasattr(self.gen, "generated_signal"):
-            print("No generated signal")
-            return
 
         y = self.gen.original_arb
         samples = len(y)

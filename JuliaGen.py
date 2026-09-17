@@ -7,7 +7,7 @@ dac_type = ["DAC_JMP", "DAC_PMOD"]
 
 DAC_SAMPLE_RATE = 268800.0   # Hz, pravi DAC PMOD rate
 
-class mockGen:
+class JuliaGen:
     def __init__(self, dac_type="DAC_JMP"):
         self.output_enable = False
         self.dac_type = dac_type
@@ -17,7 +17,7 @@ class mockGen:
             self.gen = dac_pmod  # Placeholder for DAC_PMOD backend
         self.data = None
 
-        print("Generator povezan")
+        print("Generator configured with DAC type:", self.dac_type)
 
     def set_cfg(
             self,
@@ -27,6 +27,7 @@ class mockGen:
             V_pump1,
             V_pump2,
             V_probe):
+        print("Setting DAC_JMP configuration...")
         self.gen.mon_probe()
         self.gen.set_cfg(
             t_pump,
